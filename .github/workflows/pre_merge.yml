@@ -1,0 +1,47 @@
+name: Pre Merge
+
+on: [pull_request]
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  build:
+      runs-on: ubuntu-latest
+      steps:
+        - name: Checkout code
+          uses: actions/checkout@v4
+        - name: Build image
+          run: | 
+            docker build . --file Dockerfile
+  unit-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Setup go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+      - name: Run tests
+        run: | 
+          go clean -testcache && go test -v -race ./...
+  integration-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Setup go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+      - name: Build action
+        run: |
+          CGO_ENABLED=0 go build -o ./bin/action ./
+      - name: Install action
+        run: |
+          go install
+      - name: Run tests
+        run: |
+          go clean -testcache && INTEGRATION=1 go test -v -race ./...
