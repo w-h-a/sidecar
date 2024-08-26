@@ -1,0 +1,48 @@
+services:
+  python-action:
+    container_name: python-action
+    command: action
+    build:
+      dockerfile: ./Dockerfile
+    environment:
+      NAMESPACE: 'python'
+      NAME: 'python-action'
+      VERSION: '0.1.0-alpha.0'
+      HTTP_ADDRESS: ':3501'
+      RPC_ADDRESS: ':50001'
+      SERVICE_NAME: 'python'
+      MEMORY: 'memory'
+    ports:
+      - '3501:3501'
+      - '50001:50001'
+  python:
+    container_name: python
+    build:
+      dockerfile: ./examples/python/Dockerfile
+  node-action:
+    container_name: node-action
+    command: action
+    build:
+      dockerfile: ./Dockerfile
+    environment:
+      NAMESPACE: 'node'
+      NAME: 'node-action'
+      VERSION: '0.1.0-alpha.0'
+      HTTP_ADDRESS: ':3501'
+      RPC_ADDRESS: ':50001'
+      STORES: 'orders'
+      PRODUCERS: 'neworder-queue'
+      CONSUMERS: 'neworder-queue'
+      SERVICE_NAME: 'node'
+      SERVICE_PORT: '3000'
+      SERVICE_PROTOCOL: 'http'
+      MEMORY: 'memory'
+    ports:
+      - '3502:3501'
+      - '50002:50001'
+  node:
+    container_name: node
+    build:
+      dockerfile: ./examples/node/Dockerfile
+    ports:
+      - '3000:3000'
