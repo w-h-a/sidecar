@@ -140,6 +140,7 @@ func run(ctx *cli.Context) {
 
 	router.Methods("POST").Path("/publish").HandlerFunc(publish.Handle)
 	router.Methods("POST").Path("/state/{storeId}").HandlerFunc(state.HandlePost)
+	router.Methods("GET").Path("/state/{storeId}").HandlerFunc(state.HandleList)
 	router.Methods("GET").Path("/state/{storeId}/{key}").HandlerFunc(state.HandleGet)
 
 	opts := []api.ApiOption{
