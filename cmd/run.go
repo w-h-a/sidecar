@@ -13,8 +13,6 @@ import (
 	"github.com/w-h-a/pkg/api"
 	"github.com/w-h-a/pkg/api/httpapi"
 	"github.com/w-h-a/pkg/broker"
-	memorybroker "github.com/w-h-a/pkg/broker/memory"
-	"github.com/w-h-a/pkg/broker/snssqs"
 	"github.com/w-h-a/pkg/client/grpcclient"
 	"github.com/w-h-a/pkg/client/httpclient"
 	"github.com/w-h-a/pkg/server"
@@ -22,8 +20,6 @@ import (
 	"github.com/w-h-a/pkg/sidecar"
 	"github.com/w-h-a/pkg/sidecar/custom"
 	"github.com/w-h-a/pkg/store"
-	"github.com/w-h-a/pkg/store/cockroach"
-	memorystore "github.com/w-h-a/pkg/store/memory"
 	"github.com/w-h-a/pkg/telemetry/log"
 )
 
@@ -37,75 +33,38 @@ func run(ctx *cli.Context) {
 
 	brokers := map[string]broker.Broker{}
 
-	if len(config.Memory) > 0 {
-		for _, s := range config.Stores {
-			if len(s) == 0 {
-				continue
-			}
+	st, err := GetStoreBuilder(config.Store)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-			stores[s] = memorystore.NewStore(
-				store.StoreWithTable(s),
-			)
+	for _, s := range config.Stores {
+		if len(s) == 0 {
+			continue
 		}
 
-		for _, s := range config.Consumers {
-			if len(s) == 0 {
-				continue
-			}
+		stores[s] = MakeStore(st, []string{config.StoreAddress}, config.ServiceName, s)
+	}
 
-			publishOptions := broker.NewPublishOptions(
-				broker.PublishWithTopic(s),
-			)
+	bk, err := GetBrokerBuilder(config.Broker)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-			subscribeOptions := broker.NewSubscribeOptions(
-				broker.SubscribeWithGroup(s),
-			)
-
-			brokers[s] = memorybroker.NewBroker(
-				broker.BrokerWithPublishOptions(publishOptions),
-				broker.BrokerWithSubscribeOptions(subscribeOptions),
-			)
-		}
-	} else {
-		for _, s := range config.Stores {
-			if len(s) == 0 {
-				continue
-			}
-
-			stores[s] = cockroach.NewStore(
-				store.StoreWithNodes(config.StoreAddress),
-				store.StoreWithDatabase(config.ServiceName),
-				store.StoreWithTable(s),
-			)
+	for _, s := range config.Producers {
+		if len(s) == 0 {
+			continue
 		}
 
-		for _, s := range config.Producers {
-			if len(s) == 0 {
-				continue
-			}
+		brokers[s] = MakeProducer(bk, []string{config.BrokerAddress}, s)
+	}
 
-			publishOptions := broker.NewPublishOptions(
-				broker.PublishWithTopic(s),
-			)
-
-			brokers[s] = snssqs.NewBroker(
-				broker.BrokerWithPublishOptions(publishOptions),
-			)
+	for _, s := range config.Consumers {
+		if len(s) == 0 {
+			continue
 		}
 
-		for _, s := range config.Consumers {
-			if len(s) == 0 {
-				continue
-			}
-
-			subscribeOptions := broker.NewSubscribeOptions(
-				broker.SubscribeWithGroup(s),
-			)
-
-			brokers[s] = snssqs.NewBroker(
-				broker.BrokerWithSubscribeOptions(subscribeOptions),
-			)
-		}
+		brokers[s] = MakeConsumer(bk, []string{config.BrokerAddress}, s, len(config.Memory) > 0)
 	}
 
 	// get services
@@ -187,7 +146,7 @@ func run(ctx *cli.Context) {
 	}()
 
 	// block here
-	err := <-errCh
+	err = <-errCh
 	if err != nil {
 		log.Errorf("failed to start action: %v", err)
 	}
