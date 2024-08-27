@@ -3,8 +3,12 @@ import requests
 
 actions_url = "http://python-action:3501/publish"
 
+n = 0
+
 while True:
-  message = { "eventName": "neworder", "data": { "orderId": "777" }, "to": ["node"] }
+  n += 1
+
+  message = { "eventName": "neworder", "data": { "orderId": n }, "to": ["node"] }
 
   try:
     response = requests.post(actions_url, json=message)

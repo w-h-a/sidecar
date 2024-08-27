@@ -10,6 +10,7 @@ import (
 
 type StateHandler interface {
 	HandlePost(w http.ResponseWriter, r *http.Request)
+	HandleList(w http.ResponseWriter, r *http.Request)
 	HandleGet(w http.ResponseWriter, r *http.Request)
 }
 
@@ -50,6 +51,43 @@ func (h *stateHandler) HandlePost(w http.ResponseWriter, r *http.Request) {
 
 	w.WriteHeader(200)
 	w.Write(nil)
+}
+
+func (h *stateHandler) HandleList(w http.ResponseWriter, r *http.Request) {
+	params := mux.Vars(r)
+
+	storeId := params["storeId"]
+
+	recs, err := h.action.RetrieveStateFromStore(storeId, "")
+	if err != nil {
+		w.WriteHeader(500)
+		w.Write([]byte(err.Error()))
+		return
+	}
+
+	if len(recs) == 0 {
+		w.WriteHeader(200)
+		w.Write([]byte(`[]`))
+		return
+	}
+
+	sidecarRecords, err := SerializeRecords(recs)
+	if err != nil {
+		w.WriteHeader(500)
+		w.Write([]byte(err.Error()))
+		return
+	}
+
+	bs, err := json.Marshal(sidecarRecords)
+	if err != nil {
+		w.WriteHeader(500)
+		w.Write([]byte(err.Error()))
+		return
+	}
+
+	w.Header().Set("content-type", "application/json")
+	w.WriteHeader(200)
+	w.Write(bs)
 }
 
 func (h *stateHandler) HandleGet(w http.ResponseWriter, r *http.Request) {
