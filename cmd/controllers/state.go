@@ -12,15 +12,16 @@ import (
 )
 
 type StateController interface {
-	Save(ctx context.Context, req *pb.SaveStateRequest, rsp *pb.SaveStateResponse) error
+	Post(ctx context.Context, req *pb.PostStateRequest, rsp *pb.PostStateResponse) error
 	Get(ctx context.Context, req *pb.GetStateRequest, rsp *pb.GetStateResponse) error
+	Delete(ctx context.Context, req *pb.DeleteStateRequest, rsp *pb.DeleteStateResponse) error
 }
 
 type stateController struct {
 	action sidecar.Sidecar
 }
 
-func (c *stateController) Save(ctx context.Context, req *pb.SaveStateRequest, rsp *pb.SaveStateResponse) error {
+func (c *stateController) Post(ctx context.Context, req *pb.PostStateRequest, rsp *pb.PostStateResponse) error {
 	state := &sidecar.State{
 		StoreId: req.StoreId,
 		Records: DeserializeRecords(req.Records),
@@ -51,6 +52,14 @@ func (c *stateController) Get(ctx context.Context, req *pb.GetStateRequest, rsp 
 
 	rsp.Value = &anypb.Any{
 		Value: bs,
+	}
+
+	return nil
+}
+
+func (c *stateController) Delete(ctx context.Context, req *pb.DeleteStateRequest, rsp *pb.DeleteStateResponse) error {
+	if err := c.action.RemoveStateFromStore(req.StoreId, req.Key); err != nil {
+		return errorutils.InternalServerError("action", "failed to remove state from store %s and key %s: %v", req.StoreId, req.Key, err)
 	}
 
 	return nil
