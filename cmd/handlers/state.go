@@ -27,7 +27,7 @@ func (h *stateHandler) HandlePost(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	if r.Body == nil {
-		BadRequest(w, "expected a body as state")
+		BadRequest(w, "expected a body as array of records")
 		return
 	}
 

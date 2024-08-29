@@ -8,7 +8,7 @@ n = 0
 while True:
   n += 1
 
-  message = { "eventName": "neworder", "data": { "orderId": n }, "to": ["node"] }
+  message = { "eventName": "neworder", "data": { "orderId": n }, "to": ["arn:aws:sns:us-west-2:339936612855:neworder"] }
 
   try:
     response = requests.post(actions_url, json=message)

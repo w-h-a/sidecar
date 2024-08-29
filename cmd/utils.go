@@ -54,7 +54,7 @@ func MakeProducer(brokerBuilder func(...broker.BrokerOption) broker.Broker, node
 
 	return brokerBuilder(
 		broker.BrokerWithNodes(nodes...),
-		broker.BrokerWithPublishOptions(options),
+		broker.BrokerWithPublishOptions(&options),
 	)
 }
 
@@ -69,13 +69,13 @@ func MakeConsumer(brokerBuilder func(...broker.BrokerOption) broker.Broker, node
 		)
 
 		return brokerBuilder(
-			broker.BrokerWithPublishOptions(pubOptions),
-			broker.BrokerWithSubscribeOptions(subOptions),
+			broker.BrokerWithPublishOptions(&pubOptions),
+			broker.BrokerWithSubscribeOptions(&subOptions),
 		)
 	}
 
 	return brokerBuilder(
 		broker.BrokerWithNodes(nodes...),
-		broker.BrokerWithSubscribeOptions(subOptions),
+		broker.BrokerWithSubscribeOptions(&subOptions),
 	)
 }

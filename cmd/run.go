@@ -71,16 +71,22 @@ func run(ctx *cli.Context) {
 	_, httpPort, _ := strings.Cut(config.HttpAddress, ":")
 	_, rpcPort, _ := strings.Cut(config.RpcAddress, ":")
 
-	action := custom.NewSidecar(
+	sidecarOpts := []sidecar.SidecarOption{
 		sidecar.SidecarWithServiceName(config.ServiceName),
 		sidecar.SidecarWithHttpPort(sidecar.Port{Port: httpPort}),
 		sidecar.SidecarWithRpcPort(sidecar.Port{Port: rpcPort}),
 		sidecar.SidecarWithServicePort(sidecar.Port{Port: config.ServicePort, Protocol: config.ServiceProtocol}),
-		sidecar.SidecarWithHttpClient(httpClient),
-		sidecar.SidecarWithRpcClient(grpcClient),
 		sidecar.SidecarWithStores(stores),
 		sidecar.SidecarWithBrokers(brokers),
-	)
+	}
+
+	if config.ServiceProtocol == "rpc" {
+		sidecarOpts = append(sidecarOpts, sidecar.SidecarWithClient(grpcClient))
+	} else {
+		sidecarOpts = append(sidecarOpts, sidecar.SidecarWithClient(httpClient))
+	}
+
+	action := custom.NewSidecar(sidecarOpts...)
 
 	// subscribe by group
 	for _, s := range config.Consumers {
@@ -103,24 +109,26 @@ func run(ctx *cli.Context) {
 	router.Methods("GET").Path("/state/{storeId}/{key}").HandlerFunc(state.HandleGet)
 	router.Methods("DELETE").Path("/state/{storeId}/{key}").HandlerFunc(state.HandleDelete)
 
-	opts := []api.ApiOption{
+	apiOpts := []api.ApiOption{
 		api.ApiWithNamespace(config.Namespace),
 		api.ApiWithName(config.Name),
 		api.ApiWithVersion(config.Version),
 		api.ApiWithAddress(config.HttpAddress),
 	}
 
-	httpServer := httpapi.NewApi(opts...)
+	httpServer := httpapi.NewApi(apiOpts...)
 
 	httpServer.Handle("/", router)
 
 	// create rpc server
-	grpcServer := grpcserver.NewServer(
+	serverOpts := []server.ServerOption{
 		server.ServerWithNamespace(config.Namespace),
 		server.ServerWithName(config.Name),
 		server.ServerWithVersion(config.Version),
 		server.ServerWithAddress(config.RpcAddress),
-	)
+	}
+
+	grpcServer := grpcserver.NewServer(serverOpts...)
 
 	controllers.RegisterStateController(
 		grpcServer,
@@ -129,6 +137,14 @@ func run(ctx *cli.Context) {
 		),
 	)
 
+	controllers.RegisterPublishController(
+		grpcServer,
+		controllers.NewPublishController(
+			action,
+		),
+	)
+
+	// wait group and error chan
 	wg := &sync.WaitGroup{}
 	errCh := make(chan error, 2)
 
