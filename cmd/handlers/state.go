@@ -2,10 +2,12 @@ package handlers
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/gorilla/mux"
 	"github.com/w-h-a/pkg/sidecar"
+	"github.com/w-h-a/pkg/store"
 )
 
 type StateHandler interface {
@@ -60,7 +62,7 @@ func (h *stateHandler) HandleList(w http.ResponseWriter, r *http.Request) {
 
 	storeId := params["storeId"]
 
-	recs, err := h.action.RetrieveStateFromStore(storeId, "")
+	recs, err := h.action.ListStateFromStore(storeId)
 	if err != nil {
 		w.WriteHeader(500)
 		w.Write([]byte(err.Error()))
@@ -99,8 +101,13 @@ func (h *stateHandler) HandleGet(w http.ResponseWriter, r *http.Request) {
 
 	key := params["key"]
 
-	recs, err := h.action.RetrieveStateFromStore(storeId, key)
-	if err != nil {
+	recs, err := h.action.SingleStateFromStore(storeId, key)
+	if err != nil && err == store.ErrRecordNotFound {
+		w.WriteHeader(404)
+		// TODO: json error responses
+		w.Write([]byte(fmt.Sprintf(`{"error": "%s"}`, err.Error())))
+		return
+	} else if err != nil {
 		w.WriteHeader(500)
 		w.Write([]byte(err.Error()))
 		return

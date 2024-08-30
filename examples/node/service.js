@@ -75,6 +75,11 @@ app.get('/order/:id', async (req, res) => {
 
   console.log(`we received this from actions: ${JSON.stringify(body)}`);
 
+  if (rsp.status === 404) {
+    res.status(404).json(body);
+    return;
+  }
+
   res.json(body);
 });
 
