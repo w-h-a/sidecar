@@ -42,6 +42,14 @@ app.post('/neworder-node', async (req, res) => {
   res.json({});
 });
 
+app.post('/b-node', async (req, res) => {
+  const data = req.body.data;
+
+  console.log(`b: ${JSON.stringify(data)}`);
+
+  res.json({});
+});
+
 app.get('/order', async (req, res) => {
   const url = new URL(`/state/orders`, actionsUrl);
 
