@@ -5,7 +5,7 @@ go 1.23.0
 require (
 	github.com/gorilla/mux v1.8.1
 	github.com/urfave/cli v1.22.15
-	github.com/w-h-a/pkg v0.23.0
+	github.com/w-h-a/pkg v0.24.0
 	google.golang.org/protobuf v1.34.2
 )
 

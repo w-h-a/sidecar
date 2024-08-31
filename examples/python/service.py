@@ -1,19 +1,13 @@
-import time
-import requests
+import flask
+from flask import request
+import json
 
-actions_url = "http://python-action:3501/publish"
+app = flask.Flask(__name__)
 
-n = 0
+@app.route('/neworder-python', methods=['POST'])
+def neworder_python_subscriber():
+    content = request.json
+    print(f'got a new order {content}', flush=True)
+    return json.dumps({'success': True}), 200, {'ContentType': 'application/json'}
 
-while True:
-  n += 1
-
-  message = { "eventName": "neworder", "data": { "orderId": n }, "to": ["arn:aws:sns:us-west-2:339936612855:neworder"] }
-
-  try:
-    response = requests.post(actions_url, json=message)
-  except Exception as e:
-      print(e)
-
-  time.sleep(10)
-  
+app.run(host='0.0.0.0', port=4000)

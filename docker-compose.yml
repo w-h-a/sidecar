@@ -1,4 +1,10 @@
 services:
+  python:
+    container_name: python
+    build:
+      dockerfile: ./examples/python/Dockerfile
+    ports:
+      - '4000:4000'
   python-action:
     container_name: python-action
     command: action
@@ -11,18 +17,22 @@ services:
       HTTP_ADDRESS: ':3501'
       RPC_ADDRESS: ':50001'
       SERVICE_NAME: 'python'
+      SERVICE_PORT: '4000'
+      SERVICE_PROTOCOL: 'http'
       STORE: 'memory'
       BROKER: 'snssqs'
-      PRODUCERS: 'arn:aws:sns:us-west-2:339936612855:neworder'
+      CONSUMERS: 'neworder-python'
       AWS_ACCESS_KEY_ID: ''
       AWS_SECRET_ACCESS_KEY: ''
     ports:
       - '3501:3501'
       - '50001:50001'
-  python:
-    container_name: python
+  node:
+    container_name: node
     build:
-      dockerfile: ./examples/python/Dockerfile
+      dockerfile: ./examples/node/Dockerfile
+    ports:
+      - '3000:3000'
   node-action:
     container_name: node-action
     command: action
@@ -40,15 +50,37 @@ services:
       STORE: 'memory'
       STORES: 'orders'
       BROKER: 'snssqs'
-      CONSUMERS: 'neworder-node'
+      CONSUMERS: 'neworder-node,b-node'
       AWS_ACCESS_KEY_ID: ''
       AWS_SECRET_ACCESS_KEY: ''
     ports:
       - '3502:3501'
       - '50002:50001'
-  node:
-    container_name: node
+  react:
+    container_name: react
     build:
-      dockerfile: ./examples/node/Dockerfile
+      dockerfile: ./examples/react/Dockerfile
     ports:
-      - '3000:3000'
+      - '8080:8080'
+  react-action:
+    container_name: react-action
+    command: action
+    build:
+      dockerfile: ./Dockerfile
+    environment:
+      NAMESPACE: 'react'
+      NAME: 'react-action'
+      VERSION: '0.1.0-alpha.0'
+      HTTP_ADDRESS: ':3501'
+      RPC_ADDRESS: ':50001'
+      SERVICE_NAME: 'react'
+      SERVICE_PORT: '8080'
+      SERVICE_PROTOCOL: 'http'
+      STORE: 'memory'
+      BROKER: 'snssqs'
+      PRODUCERS: 'arn:aws:sns:us-west-2:339936612855:neworder,arn:aws:sns:us-west-2:339936612855:b'
+      AWS_ACCESS_KEY_ID: ''
+      AWS_SECRET_ACCESS_KEY: ''
+    ports:
+      - '3503:3501'
+      - '50003:50001'
