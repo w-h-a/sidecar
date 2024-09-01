@@ -4,7 +4,7 @@ const path = require('path');
 
 const port = 8080;
 
-const actionsUrl = 'http://react-action:3501';
+const actionsUrl = 'http://localhost:3501';
 
 const app = express();
 app.use(express.json());

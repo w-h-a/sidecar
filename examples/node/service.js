@@ -7,7 +7,7 @@ app.use(express.json());
 
 const port = 3000;
 
-const actionsUrl = 'http://node-action:3501';
+const actionsUrl = 'http://localhost:3501';
 
 app.post('/neworder-node', async (req, res) => {
   const data = req.body.data;
