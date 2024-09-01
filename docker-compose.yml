@@ -1,10 +1,15 @@
 services:
+  ############################
+  # python service + action sidecar
+  ############################
   python:
     container_name: python
     build:
       dockerfile: ./examples/python/Dockerfile
     ports:
       - '4000:4000'
+    networks:
+      - action
   python-action:
     container_name: python-action
     command: action
@@ -16,7 +21,7 @@ services:
       VERSION: '0.1.0-alpha.0'
       HTTP_ADDRESS: ':3501'
       RPC_ADDRESS: ':50001'
-      SERVICE_NAME: 'python'
+      SERVICE_NAME: 'localhost'
       SERVICE_PORT: '4000'
       SERVICE_PROTOCOL: 'http'
       STORE: 'memory'
@@ -24,15 +29,18 @@ services:
       CONSUMERS: 'neworder-python'
       AWS_ACCESS_KEY_ID: ''
       AWS_SECRET_ACCESS_KEY: ''
-    ports:
-      - '3501:3501'
-      - '50001:50001'
+    network_mode: 'service:python'
+  ############################
+  # node service + action sidecar
+  ############################
   node:
     container_name: node
     build:
       dockerfile: ./examples/node/Dockerfile
     ports:
       - '3000:3000'
+    networks:
+      - action
   node-action:
     container_name: node-action
     command: action
@@ -44,7 +52,7 @@ services:
       VERSION: '0.1.0-alpha.0'
       HTTP_ADDRESS: ':3501'
       RPC_ADDRESS: ':50001'
-      SERVICE_NAME: 'node'
+      SERVICE_NAME: 'localhost'
       SERVICE_PORT: '3000'
       SERVICE_PROTOCOL: 'http'
       STORE: 'memory'
@@ -53,15 +61,18 @@ services:
       CONSUMERS: 'neworder-node,b-node'
       AWS_ACCESS_KEY_ID: ''
       AWS_SECRET_ACCESS_KEY: ''
-    ports:
-      - '3502:3501'
-      - '50002:50001'
+    network_mode: 'service:node'
+  ############################
+  # react service + action sidecar
+  ############################
   react:
     container_name: react
     build:
       dockerfile: ./examples/react/Dockerfile
     ports:
       - '8080:8080'
+    networks:
+      - action
   react-action:
     container_name: react-action
     command: action
@@ -73,7 +84,7 @@ services:
       VERSION: '0.1.0-alpha.0'
       HTTP_ADDRESS: ':3501'
       RPC_ADDRESS: ':50001'
-      SERVICE_NAME: 'react'
+      SERVICE_NAME: 'localhost'
       SERVICE_PORT: '8080'
       SERVICE_PROTOCOL: 'http'
       STORE: 'memory'
@@ -81,6 +92,6 @@ services:
       PRODUCERS: 'arn:aws:sns:us-west-2:339936612855:neworder,arn:aws:sns:us-west-2:339936612855:b'
       AWS_ACCESS_KEY_ID: ''
       AWS_SECRET_ACCESS_KEY: ''
-    ports:
-      - '3503:3501'
-      - '50003:50001'
+    network_mode: 'service:react'
+networks:
+  action:
