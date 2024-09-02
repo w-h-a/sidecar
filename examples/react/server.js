@@ -4,7 +4,7 @@ const path = require('path');
 
 const port = 8080;
 
-const actionsUrl = 'http://localhost:3501';
+const sidecarUrl = 'http://localhost:3501';
 
 const app = express();
 app.use(express.json());
@@ -13,7 +13,7 @@ app.use(express.static(path.join(__dirname, 'client/build')));
 app.post('/publish', async (req, res) => {
   console.log(`publishing: ${JSON.stringify(req.body)}`);
 
-  const url = new URL(`/publish`, actionsUrl);
+  const url = new URL(`/publish`, sidecarUrl);
 
   await fetch(url.href, {
     method: 'POST',

@@ -1,7 +1,7 @@
 package controllers
 
 import (
-	pb "github.com/w-h-a/pkg/proto/action"
+	pb "github.com/w-h-a/pkg/proto/sidecar"
 	"github.com/w-h-a/pkg/sidecar"
 	"github.com/w-h-a/pkg/store"
 	"google.golang.org/protobuf/types/known/anypb"
