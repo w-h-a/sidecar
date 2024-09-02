@@ -4,7 +4,7 @@ import (
 	"context"
 	"time"
 
-	pb "github.com/w-h-a/pkg/proto/action"
+	pb "github.com/w-h-a/pkg/proto/sidecar"
 	"github.com/w-h-a/pkg/server"
 	"github.com/w-h-a/pkg/sidecar"
 	"github.com/w-h-a/pkg/utils/errorutils"
@@ -15,12 +15,12 @@ type PublishController interface {
 }
 
 type publishController struct {
-	action sidecar.Sidecar
+	service sidecar.Sidecar
 }
 
 func (c *publishController) Publish(ctx context.Context, req *pb.PublishRequest, rsp *pb.PublishResponse) error {
 	if req.Event == nil {
-		return errorutils.BadRequest("action", "event is required")
+		return errorutils.BadRequest("sidecar", "event is required")
 	}
 
 	event := &sidecar.Event{
@@ -31,8 +31,8 @@ func (c *publishController) Publish(ctx context.Context, req *pb.PublishRequest,
 		CreatedAt:  time.Now(),
 	}
 
-	if err := c.action.WriteEventToBroker(event); err != nil {
-		return errorutils.InternalServerError("action", "failed to publish event: %v", err)
+	if err := c.service.WriteEventToBroker(event); err != nil {
+		return errorutils.InternalServerError("sidecar", "failed to publish event: %v", err)
 	}
 
 	return nil

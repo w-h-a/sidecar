@@ -12,7 +12,7 @@ type PublishHandler interface {
 }
 
 type publishHandler struct {
-	action sidecar.Sidecar
+	service sidecar.Sidecar
 }
 
 func (h *publishHandler) Handle(w http.ResponseWriter, r *http.Request) {
@@ -32,7 +32,7 @@ func (h *publishHandler) Handle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.action.WriteEventToBroker(event); err != nil {
+	if err := h.service.WriteEventToBroker(event); err != nil {
 		w.WriteHeader(500)
 		w.Write([]byte(err.Error()))
 	}

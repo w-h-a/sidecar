@@ -1,6 +1,6 @@
 services:
   ############################
-  # python service + action sidecar
+  # python service + sidecar
   ############################
   python:
     container_name: python
@@ -9,15 +9,15 @@ services:
     ports:
       - '4000:4000'
     networks:
-      - action
-  python-action:
-    container_name: python-action
-    command: action
+      - sidecar
+  python-sidecar:
+    container_name: python-sidecar
+    command: sidecar
     build:
       dockerfile: ./Dockerfile
     environment:
       NAMESPACE: 'python'
-      NAME: 'python-action'
+      NAME: 'python-sidecar'
       VERSION: '0.1.0-alpha.0'
       HTTP_ADDRESS: ':3501'
       RPC_ADDRESS: ':50001'
@@ -31,7 +31,7 @@ services:
       AWS_SECRET_ACCESS_KEY: ''
     network_mode: 'service:python'
   ############################
-  # node service + action sidecar
+  # node service + sidecar
   ############################
   node:
     container_name: node
@@ -40,15 +40,15 @@ services:
     ports:
       - '3000:3000'
     networks:
-      - action
-  node-action:
-    container_name: node-action
-    command: action
+      - sidecar
+  node-sidecar:
+    container_name: node-sidecar
+    command: sidecar
     build:
       dockerfile: ./Dockerfile
     environment:
       NAMESPACE: 'node'
-      NAME: 'node-action'
+      NAME: 'node-sidecar'
       VERSION: '0.1.0-alpha.0'
       HTTP_ADDRESS: ':3501'
       RPC_ADDRESS: ':50001'
@@ -63,7 +63,7 @@ services:
       AWS_SECRET_ACCESS_KEY: ''
     network_mode: 'service:node'
   ############################
-  # react service + action sidecar
+  # react service + sidecar
   ############################
   react:
     container_name: react
@@ -72,15 +72,15 @@ services:
     ports:
       - '8080:8080'
     networks:
-      - action
-  react-action:
-    container_name: react-action
-    command: action
+      - sidecar
+  react-sidecar:
+    container_name: react-sidecar
+    command: sidecar
     build:
       dockerfile: ./Dockerfile
     environment:
       NAMESPACE: 'react'
-      NAME: 'react-action'
+      NAME: 'react-sidecar'
       VERSION: '0.1.0-alpha.0'
       HTTP_ADDRESS: ':3501'
       RPC_ADDRESS: ':50001'
@@ -94,4 +94,4 @@ services:
       AWS_SECRET_ACCESS_KEY: ''
     network_mode: 'service:react'
 networks:
-  action:
+  sidecar:

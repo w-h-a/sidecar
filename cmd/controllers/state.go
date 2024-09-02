@@ -3,7 +3,7 @@ package controllers
 import (
 	"context"
 
-	pb "github.com/w-h-a/pkg/proto/action"
+	pb "github.com/w-h-a/pkg/proto/sidecar"
 	"github.com/w-h-a/pkg/server"
 	"github.com/w-h-a/pkg/sidecar"
 	"github.com/w-h-a/pkg/store"
@@ -18,7 +18,7 @@ type StateController interface {
 }
 
 type stateController struct {
-	action sidecar.Sidecar
+	service sidecar.Sidecar
 }
 
 func (c *stateController) Post(ctx context.Context, req *pb.PostStateRequest, rsp *pb.PostStateResponse) error {
@@ -27,17 +27,17 @@ func (c *stateController) Post(ctx context.Context, req *pb.PostStateRequest, rs
 		Records: DeserializeRecords(req.Records),
 	}
 
-	if err := c.action.SaveStateToStore(state); err != nil {
-		return errorutils.InternalServerError("action", "failed to save state to store %s: %v", req.StoreId, err)
+	if err := c.service.SaveStateToStore(state); err != nil {
+		return errorutils.InternalServerError("sidecar", "failed to save state to store %s: %v", req.StoreId, err)
 	}
 
 	return nil
 }
 
 func (c *stateController) List(ctx context.Context, req *pb.ListStateRequest, rsp *pb.ListStateResponse) error {
-	recs, err := c.action.ListStateFromStore(req.StoreId)
+	recs, err := c.service.ListStateFromStore(req.StoreId)
 	if err != nil {
-		return errorutils.InternalServerError("action", "failed to retrive state from store %s: %v", req.StoreId, err)
+		return errorutils.InternalServerError("sidecar", "failed to retrive state from store %s: %v", req.StoreId, err)
 	}
 
 	rsp.Records = SerializeRecords(recs)
@@ -46,11 +46,11 @@ func (c *stateController) List(ctx context.Context, req *pb.ListStateRequest, rs
 }
 
 func (c *stateController) Get(ctx context.Context, req *pb.GetStateRequest, rsp *pb.GetStateResponse) error {
-	recs, err := c.action.SingleStateFromStore(req.StoreId, req.Key)
+	recs, err := c.service.SingleStateFromStore(req.StoreId, req.Key)
 	if err != nil && err == store.ErrRecordNotFound {
-		return errorutils.NotFound("action", "there is no such record at store %s and key %s", req.StoreId, req.Key)
+		return errorutils.NotFound("sidecar", "there is no such record at store %s and key %s", req.StoreId, req.Key)
 	} else if err != nil {
-		return errorutils.InternalServerError("action", "failed to retrieve state from store %s and key %s: %v", req.StoreId, req.Key, err)
+		return errorutils.InternalServerError("sidecar", "failed to retrieve state from store %s and key %s: %v", req.StoreId, req.Key, err)
 	}
 
 	rsp.Records = SerializeRecords(recs)
@@ -59,8 +59,8 @@ func (c *stateController) Get(ctx context.Context, req *pb.GetStateRequest, rsp 
 }
 
 func (c *stateController) Delete(ctx context.Context, req *pb.DeleteStateRequest, rsp *pb.DeleteStateResponse) error {
-	if err := c.action.RemoveStateFromStore(req.StoreId, req.Key); err != nil {
-		return errorutils.InternalServerError("action", "failed to remove state from store %s and key %s: %v", req.StoreId, req.Key, err)
+	if err := c.service.RemoveStateFromStore(req.StoreId, req.Key); err != nil {
+		return errorutils.InternalServerError("sidecar", "failed to remove state from store %s and key %s: %v", req.StoreId, req.Key, err)
 	}
 
 	return nil

@@ -1,9 +1,9 @@
 FROM golang AS build
-WORKDIR /go/src/action
+WORKDIR /go/src/sidecar
 COPY . .
-RUN CGO_ENABLED=0 go build -o /go/bin/action ./
+RUN CGO_ENABLED=0 go build -o /go/bin/sidecar ./
 
 FROM alpine
 RUN apk --no-cache add ca-certificates
-COPY --from=build /go/bin/action /bin/action
-ENTRYPOINT [ "/bin/action" ]
+COPY --from=build /go/bin/sidecar /bin/sidecar
+ENTRYPOINT [ "/bin/sidecar" ]

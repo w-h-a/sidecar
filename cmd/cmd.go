@@ -4,8 +4,8 @@ import "github.com/urfave/cli"
 
 func Commands() []cli.Command {
 	command := cli.Command{
-		Name:   "action",
-		Usage:  "run the action sidecar",
+		Name:   "sidecar",
+		Usage:  "run the sidecar",
 		Action: run,
 	}
 

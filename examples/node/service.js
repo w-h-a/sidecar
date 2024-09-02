@@ -7,7 +7,7 @@ app.use(express.json());
 
 const port = 3000;
 
-const actionsUrl = 'http://localhost:3501';
+const sidecarUrl = 'http://localhost:3501';
 
 app.post('/neworder-node', async (req, res) => {
   const data = req.body.data;
@@ -23,7 +23,7 @@ app.post('/neworder-node', async (req, res) => {
     },
   ];
 
-  const url = new URL(`/state/orders`, actionsUrl);
+  const url = new URL(`/state/orders`, sidecarUrl);
 
   const rsp = await fetch(url.href, {
     method: 'POST',
@@ -51,7 +51,7 @@ app.post('/b-node', async (req, res) => {
 });
 
 app.get('/order', async (req, res) => {
-  const url = new URL(`/state/orders`, actionsUrl);
+  const url = new URL(`/state/orders`, sidecarUrl);
 
   const rsp = await fetch(url.href, {
     method: 'GET',
@@ -62,7 +62,7 @@ app.get('/order', async (req, res) => {
 
   const body = await rsp.json();
 
-  console.log(`we received this from actions: ${JSON.stringify(body)}`);
+  console.log(`we received this from sidecar: ${JSON.stringify(body)}`);
 
   res.json(body);
 });
@@ -70,7 +70,7 @@ app.get('/order', async (req, res) => {
 app.get('/order/:id', async (req, res) => {
   const id = req.params['id'];
 
-  const url = new URL(`/state/orders/${id}`, actionsUrl);
+  const url = new URL(`/state/orders/${id}`, sidecarUrl);
 
   const rsp = await fetch(url.href, {
     method: 'GET',
@@ -81,7 +81,7 @@ app.get('/order/:id', async (req, res) => {
 
   const body = await rsp.json();
 
-  console.log(`we received this from actions: ${JSON.stringify(body)}`);
+  console.log(`we received this from sidecar: ${JSON.stringify(body)}`);
 
   if (rsp.status === 404) {
     res.status(404).json(body);
@@ -94,7 +94,7 @@ app.get('/order/:id', async (req, res) => {
 app.delete('/order/:id', async (req, res) => {
   const id = req.params['id'];
 
-  const url = new URL(`/state/orders/${id}`, actionsUrl);
+  const url = new URL(`/state/orders/${id}`, sidecarUrl);
 
   await fetch(url.href, {
     method: 'DELETE',

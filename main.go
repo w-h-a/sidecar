@@ -4,7 +4,7 @@ import (
 	"os"
 
 	"github.com/urfave/cli"
-	"github.com/w-h-a/action/cmd"
+	"github.com/w-h-a/sidecar/cmd"
 	"github.com/w-h-a/pkg/telemetry/log"
 )
 

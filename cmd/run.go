@@ -7,9 +7,9 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/urfave/cli"
-	"github.com/w-h-a/action/cmd/config"
-	"github.com/w-h-a/action/cmd/controllers"
-	"github.com/w-h-a/action/cmd/handlers"
+	"github.com/w-h-a/sidecar/cmd/config"
+	"github.com/w-h-a/sidecar/cmd/controllers"
+	"github.com/w-h-a/sidecar/cmd/handlers"
 	"github.com/w-h-a/pkg/api"
 	"github.com/w-h-a/pkg/api/httpapi"
 	"github.com/w-h-a/pkg/broker"
@@ -86,7 +86,7 @@ func run(ctx *cli.Context) {
 		sidecarOpts = append(sidecarOpts, sidecar.SidecarWithClient(httpClient))
 	}
 
-	action := custom.NewSidecar(sidecarOpts...)
+	service := custom.NewSidecar(sidecarOpts...)
 
 	// subscribe by group
 	for _, s := range config.Consumers {
@@ -94,14 +94,14 @@ func run(ctx *cli.Context) {
 			continue
 		}
 
-		action.ReadEventsFromBroker(s)
+		service.ReadEventsFromBroker(s)
 	}
 
 	// create http server
 	router := mux.NewRouter()
 
-	publish := handlers.NewPublishHandler(action)
-	state := handlers.NewStateHandler(action)
+	publish := handlers.NewPublishHandler(service)
+	state := handlers.NewStateHandler(service)
 
 	router.Methods("POST").Path("/publish").HandlerFunc(publish.Handle)
 	router.Methods("POST").Path("/state/{storeId}").HandlerFunc(state.HandlePost)
@@ -133,14 +133,14 @@ func run(ctx *cli.Context) {
 	controllers.RegisterStateController(
 		grpcServer,
 		controllers.NewStateController(
-			action,
+			service,
 		),
 	)
 
 	controllers.RegisterPublishController(
 		grpcServer,
 		controllers.NewPublishController(
-			action,
+			service,
 		),
 	)
 
@@ -165,12 +165,12 @@ func run(ctx *cli.Context) {
 	// block here
 	err = <-errCh
 	if err != nil {
-		log.Errorf("failed to start action: %v", err)
+		log.Errorf("failed to start sidecar: %v", err)
 	}
 
 	// unsubscribe by group
 	for _, s := range config.Consumers {
-		if err := action.UnsubscribeFromBroker(s); err != nil {
+		if err := service.UnsubscribeFromBroker(s); err != nil {
 			log.Errorf("failed to unsubscribe from broker %s: %v", s, err)
 		}
 	}
@@ -188,5 +188,5 @@ func run(ctx *cli.Context) {
 	case <-time.After(30 * time.Second):
 	}
 
-	log.Info("successfully stopped action")
+	log.Info("successfully stopped sidecar")
 }

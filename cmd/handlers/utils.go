@@ -10,7 +10,7 @@ import (
 )
 
 func BadRequest(w http.ResponseWriter, description string) {
-	e := errorutils.BadRequest("action", description)
+	e := errorutils.BadRequest("sidecar", description)
 	w.WriteHeader(400)
 	w.Write([]byte(e.Error()))
 }
