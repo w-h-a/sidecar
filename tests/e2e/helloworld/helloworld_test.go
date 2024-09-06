@@ -13,6 +13,10 @@ import (
 )
 
 func TestMain(m *testing.M) {
+	if len(os.Getenv("E2E")) == 0 {
+		os.Exit(0)
+	}
+
 	dir, err := os.Getwd()
 	if err != nil {
 		log.Fatal(err)
@@ -33,10 +37,6 @@ func TestMain(m *testing.M) {
 }
 
 func TestHelloWorld(t *testing.T) {
-	if len(os.Getenv("E2E")) == 0 {
-		t.Skip("skipping e2e tests")
-	}
-
 	rsp, err := httputils.HttpGet("http://localhost:3000")
 	require.NoError(t, err)
 
