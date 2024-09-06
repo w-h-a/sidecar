@@ -4,8 +4,8 @@ import (
 	"os"
 
 	"github.com/urfave/cli"
-	"github.com/w-h-a/sidecar/cmd"
 	"github.com/w-h-a/pkg/telemetry/log"
+	"github.com/w-h-a/sidecar/cmd"
 )
 
 func main() {

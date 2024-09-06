@@ -7,9 +7,6 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/urfave/cli"
-	"github.com/w-h-a/sidecar/cmd/config"
-	"github.com/w-h-a/sidecar/cmd/controllers"
-	"github.com/w-h-a/sidecar/cmd/handlers"
 	"github.com/w-h-a/pkg/api"
 	"github.com/w-h-a/pkg/api/httpapi"
 	"github.com/w-h-a/pkg/broker"
@@ -21,6 +18,9 @@ import (
 	"github.com/w-h-a/pkg/sidecar/custom"
 	"github.com/w-h-a/pkg/store"
 	"github.com/w-h-a/pkg/telemetry/log"
+	"github.com/w-h-a/sidecar/cmd/config"
+	"github.com/w-h-a/sidecar/cmd/controllers"
+	"github.com/w-h-a/sidecar/cmd/handlers"
 )
 
 func run(ctx *cli.Context) {
