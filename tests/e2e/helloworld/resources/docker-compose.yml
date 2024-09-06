@@ -1,0 +1,32 @@
+services:
+  ############################
+  # hello world service + sidecar
+  ############################
+  helloworld:
+    container_name: helloworld
+    build:
+      dockerfile: Dockerfile
+    ports:
+      - '3000:3000'
+    networks:
+      - sidecar
+  helloworld-sidecar:
+    container_name: helloworld-sidecar
+    command: sidecar
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    environment:
+      NAMESPACE: 'helloworld'
+      NAME: 'helloworld-sidecar'
+      VERSION: '0.1.0-alpha.0'
+      HTTP_ADDRESS: ':3501'
+      RPC_ADDRESS: ':50001'
+      SERVICE_NAME: 'localhost'
+      SERVICE_PORT: '3000'
+      SERVICE_PROTOCOL: 'http'
+      STORE: 'memory'
+      BROKER: 'memory'
+    network_mode: 'service:helloworld'
+networks:
+  sidecar:

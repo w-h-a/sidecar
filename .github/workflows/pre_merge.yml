@@ -45,3 +45,15 @@ jobs:
       - name: Run tests
         run: |
           go clean -testcache && INTEGRATION=1 go test -v -race ./...
+  e2e-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      - name: Setup go
+        uses: actions/setup-go@v5
+        with:
+          go-version: '1.21'
+      - name: Run tests
+        run: |
+          go clean -testcache && E2E=1 go test -v -race ./...

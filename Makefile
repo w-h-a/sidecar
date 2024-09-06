@@ -14,6 +14,10 @@ unit-test:
 integration-test:
 	go clean -testcache && INTEGRATION=1 go test -v -race ./...
 
+.PHONY: e2e-test
+e2e-test:
+	go clean -testcache && E2E=1 go test -v -race ./...
+
 .PHONY: go-build
 go-build:
 	CGO_ENABLED=0 go build -o ./bin/sidecar ./
