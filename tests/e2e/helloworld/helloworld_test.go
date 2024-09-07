@@ -1,6 +1,7 @@
 package helloworld
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"testing"
@@ -36,9 +37,53 @@ func TestMain(m *testing.M) {
 	os.Exit(r.Start(m))
 }
 
-func TestHelloWorld(t *testing.T) {
-	rsp, err := httputils.HttpGet("http://localhost:3000")
-	require.NoError(t, err)
+type Case struct {
+	Description string
+	TestCommand string
+	ExpectedRsp string
+}
 
-	require.Equal(t, rsp, []byte("Hello, World"))
+type AppResponse struct {
+	Message   string `json:"message,omitempty"`
+	StartTime int    `json:"start_time,omitempty"`
+	EndTime   int    `json:"end_time,omitempty"`
+}
+
+type TestCommandRequest struct {
+	Message string `json:"message,omitempty"`
+}
+
+func TestHelloWorld(t *testing.T) {
+	helloTests := []Case{
+		{
+			Description: "when we call the blue endpoint",
+			TestCommand: "blue",
+			ExpectedRsp: "Hello, Blue",
+		},
+		{
+			Description: "when we call the green endpoint",
+			TestCommand: "green",
+			ExpectedRsp: "Hello, Green",
+		},
+	}
+
+	for _, testCase := range helloTests {
+		t.Run(testCase.Description, func(t *testing.T) {
+			_, err := httputils.HttpGet("http://localhost:3000")
+			require.NoError(t, err)
+
+			body, err := json.Marshal(TestCommandRequest{Message: "Hello!"})
+			require.NoError(t, err)
+
+			rsp, err := httputils.HttpPost(fmt.Sprintf("http://localhost:3000/tests/%s", testCase.TestCommand), body)
+			require.NoError(t, err)
+
+			var appRsp AppResponse
+
+			err = json.Unmarshal(rsp, &appRsp)
+			require.NoError(t, err)
+
+			require.Equal(t, testCase.ExpectedRsp, appRsp.Message)
+		})
+	}
 }
