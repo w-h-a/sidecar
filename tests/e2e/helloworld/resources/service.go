@@ -39,6 +39,8 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func testHandler(w http.ResponseWriter, r *http.Request) {
+	log.Println("testHander has been called")
+
 	testCommand := mux.Vars(r)["test"]
 
 	var commandBody TestCommandRequest

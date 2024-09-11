@@ -1,0 +1,13 @@
+services:
+  roach:
+    container_name: roach
+    command: start-single-node --advertise-addr 'localhost' --insecure
+    image: cockroachdb/cockroach:latest
+    ports:
+      - '26257:26257'
+      - '9000:8080'
+    networks:
+      - state-net
+networks:
+  state-net:
+    name: state-net

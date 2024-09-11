@@ -3,10 +3,11 @@ module github.com/w-h-a/sidecar
 go 1.23.0
 
 require (
+	github.com/google/uuid v1.6.0
 	github.com/gorilla/mux v1.8.1
 	github.com/stretchr/testify v1.9.0
 	github.com/urfave/cli v1.22.15
-	github.com/w-h-a/pkg v0.27.0
+	github.com/w-h-a/pkg v0.28.0
 	google.golang.org/protobuf v1.34.2
 )
 
@@ -39,7 +40,6 @@ require (
 	github.com/go-logr/logr v1.4.2 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
 	github.com/gogo/protobuf v1.3.2 // indirect
-	github.com/google/uuid v1.6.0 // indirect
 	github.com/gorilla/handlers v1.5.2 // indirect
 	github.com/grpc-ecosystem/grpc-gateway/v2 v2.22.0 // indirect
 	github.com/kr/pretty v0.3.1 // indirect
