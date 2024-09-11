@@ -43,7 +43,7 @@ type Case struct {
 	ExpectedRsp string
 }
 
-type AppResponse struct {
+type ServiceResponse struct {
 	Message   string `json:"message,omitempty"`
 	StartTime int    `json:"start_time,omitempty"`
 	EndTime   int    `json:"end_time,omitempty"`
@@ -69,21 +69,21 @@ func TestHelloWorld(t *testing.T) {
 
 	for _, testCase := range helloTests {
 		t.Run(testCase.Description, func(t *testing.T) {
-			_, err := httputils.HttpGet("http://localhost:3000")
+			_, err := httputils.HttpGet("http://localhost:3001")
 			require.NoError(t, err)
 
 			body, err := json.Marshal(TestCommandRequest{Message: "Hello!"})
 			require.NoError(t, err)
 
-			rsp, err := httputils.HttpPost(fmt.Sprintf("http://localhost:3000/tests/%s", testCase.TestCommand), body)
+			rsp, err := httputils.HttpPost(fmt.Sprintf("http://localhost:3001/tests/%s", testCase.TestCommand), body)
 			require.NoError(t, err)
 
-			var appRsp AppResponse
+			var svcRsp ServiceResponse
 
-			err = json.Unmarshal(rsp, &appRsp)
+			err = json.Unmarshal(rsp, &svcRsp)
 			require.NoError(t, err)
 
-			require.Equal(t, testCase.ExpectedRsp, appRsp.Message)
+			require.Equal(t, testCase.ExpectedRsp, svcRsp.Message)
 		})
 	}
 }

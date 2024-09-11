@@ -1,0 +1,38 @@
+services:
+  ############################
+  # state service + sidecar
+  ############################
+  state:
+    container_name: state
+    build:
+      dockerfile: Dockerfile
+    restart: on-failure:10
+    ports:
+      - '3002:3000'
+    networks:
+      - state-net
+  state-sidecar:
+    container_name: state-sidecar
+    command: sidecar
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    restart: on-failure:10
+    environment:
+      NAMESPACE: 'state'
+      NAME: 'state-sidecar'
+      VERSION: '0.1.0-alpha.0'
+      HTTP_ADDRESS: ':3501'
+      RPC_ADDRESS: ':50001'
+      SERVICE_NAME: 'localhost'
+      SERVICE_PORT: '3002'
+      SERVICE_PROTOCOL: 'http'
+      STORE: 'cockroach'
+      STORE_ADDRESS: 'postgresql://root@roach:26257?sslmode=disable'
+      DB: 'test'
+      STORES: 'test'
+      BROKER: 'memory'
+    network_mode: 'service:state'
+networks:
+  state-net:
+    external: true

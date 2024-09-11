@@ -7,9 +7,9 @@ services:
     build:
       dockerfile: Dockerfile
     ports:
-      - '3000:3000'
+      - '3001:3000'
     networks:
-      - sidecar
+      - helloworld
   helloworld-sidecar:
     container_name: helloworld-sidecar
     command: sidecar
@@ -23,10 +23,10 @@ services:
       HTTP_ADDRESS: ':3501'
       RPC_ADDRESS: ':50001'
       SERVICE_NAME: 'localhost'
-      SERVICE_PORT: '3000'
+      SERVICE_PORT: '3001'
       SERVICE_PROTOCOL: 'http'
       STORE: 'memory'
       BROKER: 'memory'
     network_mode: 'service:helloworld'
 networks:
-  sidecar:
+  helloworld:

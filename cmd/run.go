@@ -43,7 +43,7 @@ func run(ctx *cli.Context) {
 			continue
 		}
 
-		stores[s] = MakeStore(st, []string{config.StoreAddress}, config.ServiceName, s)
+		stores[s] = MakeStore(st, []string{config.StoreAddress}, config.DB, s)
 	}
 
 	bk, err := GetBrokerBuilder(config.Broker)
@@ -64,7 +64,7 @@ func run(ctx *cli.Context) {
 			continue
 		}
 
-		brokers[s] = MakeConsumer(bk, []string{config.BrokerAddress}, s, len(config.Memory) > 0)
+		brokers[s] = MakeConsumer(bk, []string{config.BrokerAddress}, s, config.Broker == "memory")
 	}
 
 	// get services
