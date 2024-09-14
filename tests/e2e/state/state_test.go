@@ -100,6 +100,12 @@ func TestState(t *testing.T) {
 				err = json.Unmarshal(rsp, &svcRsp)
 				require.NoError(t, err)
 
+				t.Logf("want %d", len(step.Expected.States))
+				t.Logf("want %#+v", step.Expected.States)
+
+				t.Logf("got %d", len(svcRsp.States))
+				t.Logf("got %#+v", svcRsp.States)
+
 				require.True(t, slicesEqual(step.Expected.States, svcRsp.States))
 
 				time.Sleep(1 * time.Second)
