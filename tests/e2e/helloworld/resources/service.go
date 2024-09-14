@@ -22,7 +22,7 @@ type TestCommandRequest struct {
 	Message string `json:"message,omitempty"`
 }
 
-func appRouter() *mux.Router {
+func serviceRouter() *mux.Router {
 	router := mux.NewRouter()
 
 	router.HandleFunc("/", indexHandler).Methods("GET")
@@ -83,7 +83,7 @@ func green(commandRequest TestCommandRequest) (int, string) {
 func main() {
 	log.Printf("hello world test service is listening on port %d", servicePort)
 
-	if err := http.ListenAndServe(fmt.Sprintf(":%d", servicePort), appRouter()); err != nil {
+	if err := http.ListenAndServe(fmt.Sprintf(":%d", servicePort), serviceRouter()); err != nil {
 		log.Fatal(err)
 	}
 }

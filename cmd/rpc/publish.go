@@ -1,4 +1,4 @@
-package controllers
+package rpc
 
 import (
 	"context"
@@ -10,15 +10,15 @@ import (
 	"github.com/w-h-a/pkg/utils/errorutils"
 )
 
-type PublishController interface {
+type PublishHandler interface {
 	Publish(ctx context.Context, req *pb.PublishRequest, rsp *pb.PublishResponse) error
 }
 
-type publishController struct {
+type publishHandler struct {
 	service sidecar.Sidecar
 }
 
-func (c *publishController) Publish(ctx context.Context, req *pb.PublishRequest, rsp *pb.PublishResponse) error {
+func (c *publishHandler) Publish(ctx context.Context, req *pb.PublishRequest, rsp *pb.PublishResponse) error {
 	if req.Event == nil {
 		return errorutils.BadRequest("sidecar", "event is required")
 	}
@@ -38,18 +38,18 @@ func (c *publishController) Publish(ctx context.Context, req *pb.PublishRequest,
 	return nil
 }
 
-func NewPublishController(s sidecar.Sidecar) PublishController {
-	return &publishController{s}
+func NewPublishHandler(s sidecar.Sidecar) PublishHandler {
+	return &publishHandler{s}
 }
 
 type Publish struct {
-	PublishController
+	PublishHandler
 }
 
-func RegisterPublishController(s server.Server, controller PublishController, opts ...server.ControllerOption) error {
-	return s.RegisterController(
-		s.NewController(
-			&Publish{controller},
+func RegisterPublishHandler(s server.Server, handler PublishHandler, opts ...server.HandlerOption) error {
+	return s.Handle(
+		s.NewHandler(
+			&Publish{handler},
 			opts...,
 		),
 	)

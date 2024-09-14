@@ -17,9 +17,10 @@ import (
 )
 
 const (
-	numHealthChecks  = 3
+	numHealthChecks  = 60
 	externalURL      = "http://localhost:3002"
-	manyEntriesCount = 5
+	manyEntriesCount = 6
+	dbWaitTime       = 60
 )
 
 func TestMain(m *testing.M) {
@@ -84,6 +85,8 @@ func TestState(t *testing.T) {
 
 	testCases := generateTestCases()
 
+	time.Sleep(dbWaitTime * time.Second)
+
 	for _, testCase := range testCases {
 		t.Run(testCase.Name, func(t *testing.T) {
 			for _, step := range testCase.Steps {
@@ -99,6 +102,12 @@ func TestState(t *testing.T) {
 
 				err = json.Unmarshal(rsp, &svcRsp)
 				require.NoError(t, err)
+
+				t.Logf("want %d", len(step.Expected.States))
+				t.Logf("want %#+v", step.Expected.States)
+
+				t.Logf("got %d", len(svcRsp.States))
+				t.Logf("got %#+v", svcRsp.States)
 
 				require.True(t, slicesEqual(step.Expected.States, svcRsp.States))
 

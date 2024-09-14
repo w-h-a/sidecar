@@ -1,0 +1,41 @@
+services:
+  localstack:
+    container_name: localstack
+    image: localstack/localstack:3.7.2
+    environment:
+      SERVICES: 'sns,sqs'
+      DEBUG: '1'
+      PORT_WEB_UI: '5000'
+      HOSTNAME: 'localhost'
+      EDGE_PORT: '4566'
+    ports:
+      - '4566-4597:4566-4597'
+      - '8000:5000'
+    networks:
+      - pubsub-net
+  awscli:
+    container_name: awscli
+    image: garland/aws-cli-docker:1.16.140
+    depends_on:
+      - localstack
+    environment:
+      AWS_DEFAULT_REGION: us-west-2
+      AWS_ACCESS_KEY_ID: dummy
+      AWS_SECRET_ACCESS_KEY: dummy
+    networks:
+      - pubsub-net
+    command:
+      - /bin/sh
+      - -c
+      - |
+        sleep 5
+        aws configure set aws_access_key_id "dummy" --profile test-profile
+        aws configure set aws_secret_access_key "dummy" --profile test-profile
+        aws configure set region "us-west-2" --profile test-profile
+        aws configure set output "table" --profile test-profile
+        aws --endpoint-url=http://localstack:4566 sns create-topic --name dummy --region us-west-2 --profile test-profile --output table | cat
+        aws --endpoint-url=http://localstack:4566 sqs create-queue --queue-name go-dummy --region us-west-2 --profile test-profile --output table | cat
+        aws --endpoint-url=http://localstack:4566 sns subscribe --topic-arn arn:aws:sns:us-west-2:000000000000:dummy --region us-west-2 --profile test-profile --protocol sqs --notification-endpoint arn:aws:sqs:us-west-2:000000000000:go-dummy --output table | cat
+networks:
+  pubsub-net:
+    name: pubsub-net

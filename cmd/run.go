@@ -19,8 +19,8 @@ import (
 	"github.com/w-h-a/pkg/store"
 	"github.com/w-h-a/pkg/telemetry/log"
 	"github.com/w-h-a/sidecar/cmd/config"
-	"github.com/w-h-a/sidecar/cmd/controllers"
-	"github.com/w-h-a/sidecar/cmd/handlers"
+	"github.com/w-h-a/sidecar/cmd/http"
+	"github.com/w-h-a/sidecar/cmd/rpc"
 )
 
 func run(ctx *cli.Context) {
@@ -100,8 +100,8 @@ func run(ctx *cli.Context) {
 	// create http server
 	router := mux.NewRouter()
 
-	publish := handlers.NewPublishHandler(service)
-	state := handlers.NewStateHandler(service)
+	publish := http.NewPublishHandler(service)
+	state := http.NewStateHandler(service)
 
 	router.Methods("POST").Path("/publish").HandlerFunc(publish.Handle)
 	router.Methods("POST").Path("/state/{storeId}").HandlerFunc(state.HandlePost)
@@ -130,16 +130,16 @@ func run(ctx *cli.Context) {
 
 	grpcServer := grpcserver.NewServer(serverOpts...)
 
-	controllers.RegisterStateController(
+	rpc.RegisterStateHandler(
 		grpcServer,
-		controllers.NewStateController(
+		rpc.NewStateHandler(
 			service,
 		),
 	)
 
-	controllers.RegisterPublishController(
+	rpc.RegisterPublishHandler(
 		grpcServer,
-		controllers.NewPublishController(
+		rpc.NewPublishHandler(
 			service,
 		),
 	)
