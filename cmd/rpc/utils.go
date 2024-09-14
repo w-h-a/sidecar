@@ -1,4 +1,4 @@
-package controllers
+package rpc
 
 import (
 	pb "github.com/w-h-a/pkg/proto/sidecar"

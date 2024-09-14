@@ -1,0 +1,74 @@
+services:
+  ############################
+  # publish service + sidecar
+  ############################
+  publish:
+    container_name: publish
+    build:
+      dockerfile: ./pub/Dockerfile
+    restart: on-failure:10
+    ports:
+      - '3003:3000'
+    networks:
+      - pubsub-net
+  publish-sidecar:
+    container_name: publish-sidecar
+    command: sidecar
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    restart: on-failure:10
+    environment:
+      NAMESPACE: 'publish'
+      NAME: 'publish-sidecar'
+      VERSION: '0.1.0-alpha.0'
+      HTTP_ADDRESS: ':3501'
+      RPC_ADDRESS: ':50001'
+      SERVICE_NAME: 'localhost'
+      SERVICE_PORT: '3000'
+      SERVICE_PROTOCOL: 'http'
+      STORE: 'memory'
+      BROKER: 'snssqs'
+      BROKER_ADDRESS: 'http://localstack:4566'
+      PRODUCERS: 'arn:aws:sns:us-west-2:000000000000:dummy'
+      AWS_ACCESS_KEY_ID: 'dummy'
+      AWS_SECRET_ACCESS_KEY: 'dummy'
+    network_mode: 'service:publish'
+  ############################
+  # subscribe service + sidecar
+  ############################
+  subscribe:
+    container_name: subscribe
+    build:
+      dockerfile: ./sub/Dockerfile
+    restart: on-failure:10
+    ports:
+      - '3004:3000'
+    networks:
+      - pubsub-net
+  subscribe-sidecar:
+    container_name: subscribe-sidecar
+    command: sidecar
+    build:
+      context: ../../../..
+      dockerfile: Dockerfile
+    restart: on-failure:10
+    environment:
+      NAMESPACE: 'subscribe'
+      NAME: 'subscribe-sidecar'
+      VERSION: '0.1.0-alpha.0'
+      HTTP_ADDRESS: ':3501'
+      RPC_ADDRESS: ':50001'
+      SERVICE_NAME: 'localhost'
+      SERVICE_PORT: '3000'
+      SERVICE_PROTOCOL: 'http'
+      STORE: 'memory'
+      BROKER: 'snssqs'
+      BROKER_ADDRESS: 'http://localstack:4566'
+      CONSUMERS: 'go-dummy'
+      AWS_ACCESS_KEY_ID: 'dummy'
+      AWS_SECRET_ACCESS_KEY: 'dummy'
+    network_mode: 'service:subscribe'
+networks:
+  pubsub-net:
+    external: true

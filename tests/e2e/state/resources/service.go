@@ -32,6 +32,15 @@ type ServiceState struct {
 	Data string `json:"data,omitempty"`
 }
 
+func serviceRouter() *mux.Router {
+	router := mux.NewRouter()
+
+	router.HandleFunc("/", indexHandler).Methods("GET")
+	router.HandleFunc("/test/{command}", testHandler).Methods("POST")
+
+	return router
+}
+
 func indexHandler(w http.ResponseWriter, r *http.Request) {
 	log.Println("indexHandler has been called")
 
@@ -154,19 +163,10 @@ func delete(states []SidecarState) error {
 	return nil
 }
 
-func appRouter() *mux.Router {
-	router := mux.NewRouter()
-
-	router.HandleFunc("/", indexHandler).Methods("GET")
-	router.HandleFunc("/test/{command}", testHandler).Methods("POST")
-
-	return router
-}
-
 func main() {
 	log.Printf("state test service is listening on port %d", servicePort)
 
-	if err := http.ListenAndServe(fmt.Sprintf(":%d", servicePort), appRouter()); err != nil {
+	if err := http.ListenAndServe(fmt.Sprintf(":%d", servicePort), serviceRouter()); err != nil {
 		log.Fatal(err)
 	}
 }

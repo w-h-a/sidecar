@@ -17,9 +17,9 @@ import (
 )
 
 const (
-	numHealthChecks  = 3
+	numHealthChecks  = 60
 	externalURL      = "http://localhost:3002"
-	manyEntriesCount = 5
+	manyEntriesCount = 6
 )
 
 func TestMain(m *testing.M) {

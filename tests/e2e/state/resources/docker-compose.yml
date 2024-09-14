@@ -25,7 +25,7 @@ services:
       HTTP_ADDRESS: ':3501'
       RPC_ADDRESS: ':50001'
       SERVICE_NAME: 'localhost'
-      SERVICE_PORT: '3002'
+      SERVICE_PORT: '3000'
       SERVICE_PROTOCOL: 'http'
       STORE: 'cockroach'
       STORE_ADDRESS: 'postgresql://root@roach:26257?sslmode=disable'
