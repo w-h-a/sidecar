@@ -2,7 +2,7 @@ services:
   roach:
     container_name: roach
     command: start-single-node --advertise-addr 'localhost' --insecure
-    image: cockroachdb/cockroach:latest
+    image: cockroachdb/cockroach:v24.2.1
     ports:
       - '26257:26257'
       - '9000:8080'

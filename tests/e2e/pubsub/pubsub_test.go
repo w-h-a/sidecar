@@ -117,6 +117,8 @@ func sendToPubService(t *testing.T) ReceivedMessagesResponse {
 		require.NoError(t, err)
 
 		t.Logf("publish response %#+v", svcRsp)
+
+		time.Sleep(1 * time.Second)
 	}
 
 	return ReceivedMessagesResponse{

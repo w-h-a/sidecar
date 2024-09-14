@@ -20,6 +20,7 @@ const (
 	numHealthChecks  = 60
 	externalURL      = "http://localhost:3002"
 	manyEntriesCount = 6
+	dbWaitTime       = 60
 )
 
 func TestMain(m *testing.M) {
@@ -83,6 +84,8 @@ func TestState(t *testing.T) {
 	require.NoError(t, err)
 
 	testCases := generateTestCases()
+
+	time.Sleep(dbWaitTime * time.Second)
 
 	for _, testCase := range testCases {
 		t.Run(testCase.Name, func(t *testing.T) {
