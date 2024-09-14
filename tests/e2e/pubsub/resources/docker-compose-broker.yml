@@ -1,7 +1,7 @@
 services:
   localstack:
     container_name: localstack
-    image: localstack/localstack:latest
+    image: localstack/localstack:3.7.2
     environment:
       SERVICES: 'sns,sqs'
       DEBUG: '1'
@@ -15,7 +15,7 @@ services:
       - pubsub-net
   awscli:
     container_name: awscli
-    image: garland/aws-cli-docker:latest
+    image: garland/aws-cli-docker:1.16.140
     depends_on:
       - localstack
     environment:
