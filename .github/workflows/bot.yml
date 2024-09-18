@@ -1,0 +1,40 @@
+name: bot
+
+on:
+  issue_comment: {types: created}
+
+jobs:
+  bot:
+    runs-one: ubuntu-latest
+    steps:
+      - name: Analyze comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const payload = context.payload;
+            const issue = context.issue;
+            const isFromPulls = !!payload.issue.pull_request;
+            const commentBody = payload.comment.body;
+
+            if (!commentBody || commentBody.indexOf("/make-me-laugh") !== 0) {
+              return;
+            }
+
+            const result = await github.request("https://official-joke-api.appspot.com/random_joke");
+            const jokedata = result.data;
+            let joke = "This is going to be hilarious.";
+
+            if (jokedata && jokedata.setup && jokedata.punchline) {
+              joke = `${jokedata.setup} - ${jokedata.punchline}`;
+            }
+
+            await github.issues.createComment({
+              owner: issue.owner,
+              repo: issue.repo,
+              pull_number: issue.number,
+              body: joke,
+            });
+
+
+
+            
