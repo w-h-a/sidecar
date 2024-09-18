@@ -13,8 +13,9 @@ jobs:
           script: |
             const payload = context.payload;
             const issue = context.issue;
-            const isFromPulls = !!payload.issue.pull_request;
             const commentBody = payload.comment.body;
+
+            console.log("commentBody", commentBody)
 
             if (!commentBody || commentBody.indexOf("/make-me-laugh") !== 0) {
               return;
@@ -27,6 +28,8 @@ jobs:
             if (jokedata && jokedata.setup && jokedata.punchline) {
               joke = `${jokedata.setup} - ${jokedata.punchline}`;
             }
+
+            console.log("joke", joke)
 
             await github.issues.createComment({
               owner: issue.owner,
