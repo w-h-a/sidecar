@@ -40,6 +40,7 @@ func TestMain(m *testing.M) {
 	brokerPath := fmt.Sprintf("%s/resources/docker-compose-broker.yml", dir)
 
 	brokerProcess := docker.NewProcess(
+		runner.ProcessWithId(brokerPath),
 		runner.ProcessWithUpBinPath("docker"),
 		runner.ProcessWithUpArgs(
 			"compose",
@@ -60,6 +61,7 @@ func TestMain(m *testing.M) {
 	servicePath := fmt.Sprintf("%s/resources/docker-compose.yml", dir)
 
 	serviceProcess := docker.NewProcess(
+		runner.ProcessWithId(servicePath),
 		runner.ProcessWithUpBinPath("docker"),
 		runner.ProcessWithUpArgs(
 			"compose",

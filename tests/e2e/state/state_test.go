@@ -36,6 +36,7 @@ func TestMain(m *testing.M) {
 	dbPath := fmt.Sprintf("%s/resources/docker-compose-db.yml", dir)
 
 	dbProcess := docker.NewProcess(
+		runner.ProcessWithId(dbPath),
 		runner.ProcessWithUpBinPath("docker"),
 		runner.ProcessWithUpArgs(
 			"compose",
@@ -56,6 +57,7 @@ func TestMain(m *testing.M) {
 	servicePath := fmt.Sprintf("%s/resources/docker-compose.yml", dir)
 
 	serviceProcess := docker.NewProcess(
+		runner.ProcessWithId(servicePath),
 		runner.ProcessWithUpBinPath("docker"),
 		runner.ProcessWithUpArgs(
 			"compose",
