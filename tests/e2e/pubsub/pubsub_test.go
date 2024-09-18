@@ -11,7 +11,7 @@ import (
 
 	"github.com/stretchr/testify/require"
 	"github.com/w-h-a/pkg/runner"
-	"github.com/w-h-a/pkg/runner/custom"
+	"github.com/w-h-a/pkg/runner/docker"
 	"github.com/w-h-a/pkg/telemetry/log"
 	"github.com/w-h-a/pkg/utils/httputils"
 )
@@ -39,7 +39,7 @@ func TestMain(m *testing.M) {
 
 	brokerPath := fmt.Sprintf("%s/resources/docker-compose-broker.yml", dir)
 
-	brokerProcess := custom.NewProcess(
+	brokerProcess := docker.NewProcess(
 		runner.ProcessWithUpBinPath("docker"),
 		runner.ProcessWithUpArgs(
 			"compose",
@@ -59,7 +59,7 @@ func TestMain(m *testing.M) {
 
 	servicePath := fmt.Sprintf("%s/resources/docker-compose.yml", dir)
 
-	serviceProcess := custom.NewProcess(
+	serviceProcess := docker.NewProcess(
 		runner.ProcessWithUpBinPath("docker"),
 		runner.ProcessWithUpArgs(
 			"compose",
@@ -77,7 +77,7 @@ func TestMain(m *testing.M) {
 		),
 	)
 
-	r := custom.NewTestRunner(
+	r := docker.NewTestRunner(
 		runner.RunnerWithId("pubsub"),
 		runner.RunnerWithProcesses(brokerProcess, serviceProcess),
 	)
