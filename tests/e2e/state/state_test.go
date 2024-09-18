@@ -11,7 +11,7 @@ import (
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
 	"github.com/w-h-a/pkg/runner"
-	"github.com/w-h-a/pkg/runner/docker"
+	"github.com/w-h-a/pkg/runner/custom"
 	"github.com/w-h-a/pkg/telemetry/log"
 	"github.com/w-h-a/pkg/utils/httputils"
 )
@@ -33,18 +33,49 @@ func TestMain(m *testing.M) {
 		log.Fatal(err)
 	}
 
-	testFiles := []runner.File{
-		{
-			Path: fmt.Sprintf("%s/resources/docker-compose-db.yml", dir),
-		},
-		{
-			Path: fmt.Sprintf("%s/resources/docker-compose.yml", dir),
-		},
-	}
+	dbPath := fmt.Sprintf("%s/resources/docker-compose-db.yml", dir)
 
-	r := docker.NewTestRunner(
+	dbProcess := custom.NewProcess(
+		runner.ProcessWithUpBinPath("docker"),
+		runner.ProcessWithUpArgs(
+			"compose",
+			"--file", dbPath,
+			"up",
+			"--build",
+			"--detach",
+		),
+		runner.ProcessWithDownBinPath("docker"),
+		runner.ProcessWithDownArgs(
+			"compose",
+			"--file", dbPath,
+			"down",
+			"--volumes",
+		),
+	)
+
+	servicePath := fmt.Sprintf("%s/resources/docker-compose.yml", dir)
+
+	serviceProcess := custom.NewProcess(
+		runner.ProcessWithUpBinPath("docker"),
+		runner.ProcessWithUpArgs(
+			"compose",
+			"--file", servicePath,
+			"up",
+			"--build",
+			"--detach",
+		),
+		runner.ProcessWithDownBinPath("docker"),
+		runner.ProcessWithDownArgs(
+			"compose",
+			"--file", servicePath,
+			"down",
+			"--volumes",
+		),
+	)
+
+	r := custom.NewTestRunner(
 		runner.RunnerWithId("state"),
-		runner.RunnerWithFiles(testFiles...),
+		runner.RunnerWithProcesses(dbProcess, serviceProcess),
 	)
 
 	os.Exit(r.Start(m))
