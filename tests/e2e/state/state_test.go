@@ -75,7 +75,7 @@ func TestMain(m *testing.M) {
 		),
 	)
 
-	r := docker.NewTestRunner(
+	r := runner.NewTestRunner(
 		runner.RunnerWithId("state"),
 		runner.RunnerWithProcesses(dbProcess, serviceProcess),
 	)

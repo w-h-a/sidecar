@@ -79,7 +79,7 @@ func TestMain(m *testing.M) {
 		),
 	)
 
-	r := docker.NewTestRunner(
+	r := runner.NewTestRunner(
 		runner.RunnerWithId("pubsub"),
 		runner.RunnerWithProcesses(brokerProcess, serviceProcess),
 	)
