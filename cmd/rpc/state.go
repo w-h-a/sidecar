@@ -38,7 +38,9 @@ func (c *stateHandler) Post(ctx context.Context, req *pb.PostStateRequest, rsp *
 
 func (c *stateHandler) List(ctx context.Context, req *pb.ListStateRequest, rsp *pb.ListStateResponse) error {
 	recs, err := c.service.ListStateFromStore(req.StoreId)
-	if err != nil {
+	if err != nil && err == sidecar.ErrComponentNotFound {
+		return errorutils.NotFound("sidecar", "%v: %s", err, req.StoreId)
+	} else if err != nil {
 		return errorutils.InternalServerError("sidecar", "failed to retrive state from store %s: %v", req.StoreId, err)
 	}
 
@@ -49,7 +51,9 @@ func (c *stateHandler) List(ctx context.Context, req *pb.ListStateRequest, rsp *
 
 func (c *stateHandler) Get(ctx context.Context, req *pb.GetStateRequest, rsp *pb.GetStateResponse) error {
 	recs, err := c.service.SingleStateFromStore(req.StoreId, req.Key)
-	if err != nil && err == store.ErrRecordNotFound {
+	if err != nil && err == sidecar.ErrComponentNotFound {
+		return errorutils.NotFound("sidecar", "%v: %s", err, req.StoreId)
+	} else if err != nil && err == store.ErrRecordNotFound {
 		return errorutils.NotFound("sidecar", "there is no such record at store %s and key %s", req.StoreId, req.Key)
 	} else if err != nil {
 		return errorutils.InternalServerError("sidecar", "failed to retrieve state from store %s and key %s: %v", req.StoreId, req.Key, err)
@@ -61,7 +65,9 @@ func (c *stateHandler) Get(ctx context.Context, req *pb.GetStateRequest, rsp *pb
 }
 
 func (c *stateHandler) Delete(ctx context.Context, req *pb.DeleteStateRequest, rsp *pb.DeleteStateResponse) error {
-	if err := c.service.RemoveStateFromStore(req.StoreId, req.Key); err != nil {
+	if err := c.service.RemoveStateFromStore(req.StoreId, req.Key); err != nil && err == sidecar.ErrComponentNotFound {
+		return errorutils.NotFound("sidecar", "%v: %s", err, req.StoreId)
+	} else if err != nil {
 		return errorutils.InternalServerError("sidecar", "failed to remove state from store %s and key %s: %v", req.StoreId, req.Key, err)
 	}
 

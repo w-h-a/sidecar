@@ -107,7 +107,8 @@ func TestStateRPC(t *testing.T) {
 		return rsp.Status == "ok"
 	}, 10*time.Second, 10*time.Millisecond)
 
-	t.Log("bad request")
+	// TODO: more in parallel
+	t.Log("bad requests")
 
 	postReq := grpcClient.NewRequest(
 		client.RequestWithNamespace("default"),
@@ -136,7 +137,7 @@ func TestStateRPC(t *testing.T) {
 
 	for _, storeName := range []string{"mytable1", "mytable2"} {
 		pt.Add(func(c *assert.CollectT) {
-			t.Logf("good request with %s", storeName)
+			t.Logf("good request with store %s", storeName)
 
 			postReq := grpcClient.NewRequest(
 				client.RequestWithNamespace("default"),

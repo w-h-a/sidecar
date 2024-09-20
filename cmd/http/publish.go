@@ -33,6 +33,11 @@ func (h *publishHandler) Handle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	if len(event.To) == 0 {
+		BadRequest(w, "an address/topic to send to is required")
+		return
+	}
+
 	if err := h.service.WriteEventToBroker(event); err != nil && err == sidecar.ErrComponentNotFound {
 		w.WriteHeader(404)
 		w.Write([]byte(fmt.Sprintf("%s: %#+v", err.Error(), event.To)))

@@ -23,6 +23,10 @@ func (c *publishHandler) Publish(ctx context.Context, req *pb.PublishRequest, rs
 		return errorutils.BadRequest("sidecar", "event is required")
 	}
 
+	if len(req.Event.To) == 0 {
+		return errorutils.BadRequest("sidecar", "an address/topic to send to is required")
+	}
+
 	event := &sidecar.Event{
 		EventName:  req.Event.EventName,
 		To:         req.Event.To,
