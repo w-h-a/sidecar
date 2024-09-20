@@ -23,6 +23,10 @@ func (c *publishHandler) Publish(ctx context.Context, req *pb.PublishRequest, rs
 		return errorutils.BadRequest("sidecar", "event is required")
 	}
 
+	if len(req.Event.To) == 0 {
+		return errorutils.BadRequest("sidecar", "an address/topic to send to is required")
+	}
+
 	event := &sidecar.Event{
 		EventName:  req.Event.EventName,
 		To:         req.Event.To,
@@ -31,7 +35,9 @@ func (c *publishHandler) Publish(ctx context.Context, req *pb.PublishRequest, rs
 		CreatedAt:  time.Now(),
 	}
 
-	if err := c.service.WriteEventToBroker(event); err != nil {
+	if err := c.service.WriteEventToBroker(event); err != nil && err == sidecar.ErrComponentNotFound {
+		return errorutils.NotFound("sidecar", "%v: %#+v", err, req.Event.To)
+	} else if err != nil {
 		return errorutils.InternalServerError("sidecar", "failed to publish event: %v", err)
 	}
 

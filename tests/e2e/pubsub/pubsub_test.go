@@ -37,18 +37,51 @@ func TestMain(m *testing.M) {
 		log.Fatal(err)
 	}
 
-	testFiles := []runner.File{
-		{
-			Path: fmt.Sprintf("%s/resources/docker-compose-broker.yml", dir),
-		},
-		{
-			Path: fmt.Sprintf("%s/resources/docker-compose.yml", dir),
-		},
-	}
+	brokerPath := fmt.Sprintf("%s/resources/docker-compose-broker.yml", dir)
 
-	r := docker.NewTestRunner(
+	brokerProcess := docker.NewProcess(
+		runner.ProcessWithId(brokerPath),
+		runner.ProcessWithUpBinPath("docker"),
+		runner.ProcessWithUpArgs(
+			"compose",
+			"--file", brokerPath,
+			"up",
+			"--build",
+			"--detach",
+		),
+		runner.ProcessWithDownBinPath("docker"),
+		runner.ProcessWithDownArgs(
+			"compose",
+			"--file", brokerPath,
+			"down",
+			"--volumes",
+		),
+	)
+
+	servicePath := fmt.Sprintf("%s/resources/docker-compose.yml", dir)
+
+	serviceProcess := docker.NewProcess(
+		runner.ProcessWithId(servicePath),
+		runner.ProcessWithUpBinPath("docker"),
+		runner.ProcessWithUpArgs(
+			"compose",
+			"--file", servicePath,
+			"up",
+			"--build",
+			"--detach",
+		),
+		runner.ProcessWithDownBinPath("docker"),
+		runner.ProcessWithDownArgs(
+			"compose",
+			"--file", servicePath,
+			"down",
+			"--volumes",
+		),
+	)
+
+	r := runner.NewTestRunner(
 		runner.RunnerWithId("pubsub"),
-		runner.RunnerWithFiles(testFiles...),
+		runner.RunnerWithProcesses(brokerProcess, serviceProcess),
 	)
 
 	os.Exit(r.Start(m))

@@ -47,7 +47,11 @@ func (h *stateHandler) HandlePost(w http.ResponseWriter, r *http.Request) {
 		Records: records,
 	}
 
-	if err := h.service.SaveStateToStore(state); err != nil {
+	if err := h.service.SaveStateToStore(state); err != nil && err == sidecar.ErrComponentNotFound {
+		w.WriteHeader(404)
+		w.Write([]byte(fmt.Sprintf("%s: %s", err.Error(), storeId)))
+		return
+	} else if err != nil {
 		w.WriteHeader(500)
 		w.Write([]byte(err.Error()))
 		return
@@ -63,7 +67,11 @@ func (h *stateHandler) HandleList(w http.ResponseWriter, r *http.Request) {
 	storeId := params["storeId"]
 
 	recs, err := h.service.ListStateFromStore(storeId)
-	if err != nil {
+	if err != nil && err == sidecar.ErrComponentNotFound {
+		w.WriteHeader(404)
+		w.Write([]byte(fmt.Sprintf("%s: %s", err.Error(), storeId)))
+		return
+	} else if err != nil {
 		w.WriteHeader(500)
 		w.Write([]byte(err.Error()))
 		return
@@ -102,7 +110,11 @@ func (h *stateHandler) HandleGet(w http.ResponseWriter, r *http.Request) {
 	key := params["key"]
 
 	recs, err := h.service.SingleStateFromStore(storeId, key)
-	if err != nil && err == store.ErrRecordNotFound {
+	if err != nil && err == sidecar.ErrComponentNotFound {
+		w.WriteHeader(404)
+		w.Write([]byte(fmt.Sprintf("%s: %s", err.Error(), storeId)))
+		return
+	} else if err != nil && err == store.ErrRecordNotFound {
 		w.WriteHeader(404)
 		// TODO: json error responses
 		w.Write([]byte(fmt.Sprintf(`{"error": "%s"}`, err.Error())))
@@ -145,7 +157,11 @@ func (h *stateHandler) HandleDelete(w http.ResponseWriter, r *http.Request) {
 
 	key := params["key"]
 
-	if err := h.service.RemoveStateFromStore(storeId, key); err != nil {
+	if err := h.service.RemoveStateFromStore(storeId, key); err != nil && err == sidecar.ErrComponentNotFound {
+		w.WriteHeader(404)
+		w.Write([]byte(fmt.Sprintf("%s: %s", err.Error(), storeId)))
+		return
+	} else if err != nil {
 		w.WriteHeader(500)
 		w.Write([]byte(err.Error()))
 		return
