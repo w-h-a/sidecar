@@ -2,6 +2,7 @@ package http
 
 import (
 	"encoding/json"
+	"fmt"
 	"net/http"
 
 	"github.com/w-h-a/pkg/sidecar"
@@ -32,9 +33,14 @@ func (h *publishHandler) Handle(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err := h.service.WriteEventToBroker(event); err != nil {
+	if err := h.service.WriteEventToBroker(event); err != nil && err == sidecar.ErrComponentNotFound {
+		w.WriteHeader(404)
+		w.Write([]byte(fmt.Sprintf("%s: %#+v", err.Error(), event.To)))
+		return
+	} else if err != nil {
 		w.WriteHeader(500)
 		w.Write([]byte(err.Error()))
+		return
 	}
 
 	w.WriteHeader(200)

@@ -47,7 +47,11 @@ func (h *stateHandler) HandlePost(w http.ResponseWriter, r *http.Request) {
 		Records: records,
 	}
 
-	if err := h.service.SaveStateToStore(state); err != nil {
+	if err := h.service.SaveStateToStore(state); err != nil && err == sidecar.ErrComponentNotFound {
+		w.WriteHeader(404)
+		w.Write([]byte(fmt.Sprintf("%s: %s", err.Error(), storeId)))
+		return
+	} else if err != nil {
 		w.WriteHeader(500)
 		w.Write([]byte(err.Error()))
 		return

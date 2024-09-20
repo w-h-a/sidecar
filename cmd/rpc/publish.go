@@ -31,7 +31,9 @@ func (c *publishHandler) Publish(ctx context.Context, req *pb.PublishRequest, rs
 		CreatedAt:  time.Now(),
 	}
 
-	if err := c.service.WriteEventToBroker(event); err != nil {
+	if err := c.service.WriteEventToBroker(event); err != nil && err == sidecar.ErrComponentNotFound {
+		return errorutils.NotFound("sidecar", "%v: %#+v", err, req.Event.To)
+	} else if err != nil {
 		return errorutils.InternalServerError("sidecar", "failed to publish event: %v", err)
 	}
 

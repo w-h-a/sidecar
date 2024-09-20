@@ -7,6 +7,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"github.com/w-h-a/pkg/client"
 	"github.com/w-h-a/pkg/client/grpcclient"
@@ -106,48 +107,79 @@ func TestStateRPC(t *testing.T) {
 		return rsp.Status == "ok"
 	}, 10*time.Second, 10*time.Millisecond)
 
-	t.Run("good requests to mytable1", func(t *testing.T) {
-		postReq := grpcClient.NewRequest(
-			client.RequestWithNamespace("default"),
-			client.RequestWithName("sidecar"),
-			client.RequestWithMethod("State.Post"),
-			client.RequestWithUnmarshaledRequest(
-				&sidecar.PostStateRequest{
-					StoreId: "mytable1",
-					Records: []*sidecar.KeyVal{
-						{
-							Key: "key1",
-							Value: &anypb.Any{
-								Value: []byte("value1"),
-							},
+	t.Log("bad request")
+
+	postReq := grpcClient.NewRequest(
+		client.RequestWithNamespace("default"),
+		client.RequestWithName("sidecar"),
+		client.RequestWithMethod("State.Post"),
+		client.RequestWithUnmarshaledRequest(
+			&sidecar.PostStateRequest{
+				Records: []*sidecar.KeyVal{
+					{
+						Key: "key1",
+						Value: &anypb.Any{
+							Value: []byte("value1"),
 						},
 					},
 				},
-			),
-		)
+			},
+		),
+	)
 
-		postRsp := &sidecar.PostStateResponse{}
+	postRsp := &sidecar.PostStateResponse{}
 
-		err = grpcClient.Call(context.Background(), postReq, postRsp, client.CallWithAddress(fmt.Sprintf("127.0.0.1:%d", rpcPort)))
-		require.NoError(t, err)
+	err = grpcClient.Call(context.Background(), postReq, postRsp, client.CallWithAddress(fmt.Sprintf("127.0.0.1:%d", rpcPort)))
+	require.Error(t, err)
 
-		getReq := grpcClient.NewRequest(
-			client.RequestWithNamespace("default"),
-			client.RequestWithName("sidecar"),
-			client.RequestWithMethod("State.Get"),
-			client.RequestWithUnmarshaledRequest(
-				&sidecar.GetStateRequest{
-					StoreId: "mytable1",
-					Key:     "key1",
-				},
-			),
-		)
+	pt := runner.NewParallelTest(t)
 
-		getRsp := &sidecar.GetStateResponse{}
+	for _, storeName := range []string{"mytable1", "mytable2"} {
+		pt.Add(func(c *assert.CollectT) {
+			t.Logf("good request with %s", storeName)
 
-		err = grpcClient.Call(context.Background(), getReq, getRsp, client.CallWithAddress(fmt.Sprintf("127.0.0.1:%d", rpcPort)))
-		require.NoError(t, err)
+			postReq := grpcClient.NewRequest(
+				client.RequestWithNamespace("default"),
+				client.RequestWithName("sidecar"),
+				client.RequestWithMethod("State.Post"),
+				client.RequestWithUnmarshaledRequest(
+					&sidecar.PostStateRequest{
+						StoreId: storeName,
+						Records: []*sidecar.KeyVal{
+							{
+								Key: "key1",
+								Value: &anypb.Any{
+									Value: []byte("value1"),
+								},
+							},
+						},
+					},
+				),
+			)
 
-		require.Equal(t, []byte("value1"), getRsp.Records[0].Value.Value)
-	})
+			postRsp := &sidecar.PostStateResponse{}
+
+			err = grpcClient.Call(context.Background(), postReq, postRsp, client.CallWithAddress(fmt.Sprintf("127.0.0.1:%d", rpcPort)))
+			require.NoError(c, err)
+
+			getReq := grpcClient.NewRequest(
+				client.RequestWithNamespace("default"),
+				client.RequestWithName("sidecar"),
+				client.RequestWithMethod("State.Get"),
+				client.RequestWithUnmarshaledRequest(
+					&sidecar.GetStateRequest{
+						StoreId: storeName,
+						Key:     "key1",
+					},
+				),
+			)
+
+			getRsp := &sidecar.GetStateResponse{}
+
+			err = grpcClient.Call(context.Background(), getReq, getRsp, client.CallWithAddress(fmt.Sprintf("127.0.0.1:%d", rpcPort)))
+			require.NoError(c, err)
+
+			require.Equal(c, []byte("value1"), getRsp.Records[0].Value.Value)
+		})
+	}
 }

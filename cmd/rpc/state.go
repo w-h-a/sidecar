@@ -27,7 +27,9 @@ func (c *stateHandler) Post(ctx context.Context, req *pb.PostStateRequest, rsp *
 		Records: DeserializeRecords(req.Records),
 	}
 
-	if err := c.service.SaveStateToStore(state); err != nil {
+	if err := c.service.SaveStateToStore(state); err != nil && err == sidecar.ErrComponentNotFound {
+		return errorutils.NotFound("sidecar", "%v: %s", err, req.StoreId)
+	} else if err != nil {
 		return errorutils.InternalServerError("sidecar", "failed to save state to store %s: %v", req.StoreId, err)
 	}
 
