@@ -2,7 +2,6 @@ package rpc
 
 import (
 	"context"
-	"time"
 
 	pb "github.com/w-h-a/pkg/proto/sidecar"
 	"github.com/w-h-a/pkg/server"
@@ -23,20 +22,17 @@ func (c *publishHandler) Publish(ctx context.Context, req *pb.PublishRequest, rs
 		return errorutils.BadRequest("sidecar", "event is required")
 	}
 
-	if len(req.Event.To) == 0 {
-		return errorutils.BadRequest("sidecar", "an address/topic to send to is required")
+	if len(req.Event.EventName) == 0 {
+		return errorutils.BadRequest("sidecar", "an event name as topic is required")
 	}
 
 	event := &sidecar.Event{
-		EventName:  req.Event.EventName,
-		To:         req.Event.To,
-		Concurrent: req.Event.Concurrent,
-		Data:       req.Event.Data.Value,
-		CreatedAt:  time.Now(),
+		EventName: req.Event.EventName,
+		Data:      req.Event.Data.Value,
 	}
 
 	if err := c.service.WriteEventToBroker(event); err != nil && err == sidecar.ErrComponentNotFound {
-		return errorutils.NotFound("sidecar", "%v: %#+v", err, req.Event.To)
+		return errorutils.NotFound("sidecar", "%v: %s", err, req.Event.EventName)
 	} else if err != nil {
 		return errorutils.InternalServerError("sidecar", "failed to publish event: %v", err)
 	}

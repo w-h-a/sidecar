@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"os"
+	"strings"
 	"testing"
 	"time"
 
@@ -46,7 +47,7 @@ func TestMain(m *testing.M) {
 		runner.ProcessWithEnvVars(map[string]string{
 			"PORT": fmt.Sprintf("%d", servicePort),
 		}),
-		subscriber.HttpSubscriberWithRoutes("/a", "/b"),
+		subscriber.HttpSubscriberWithRoutes("/go/a", "/go/b"),
 	)
 
 	httpPort, err = runner.GetFreePort()
@@ -74,7 +75,7 @@ func TestMain(m *testing.M) {
 			"SERVICE_PROTOCOL": "http",
 			"STORE":            "memory",
 			"BROKER":           "memory",
-			"CONSUMERS":        "a,b",
+			"CONSUMERS":        "go-a,go-b",
 		}),
 	)
 
@@ -129,7 +130,7 @@ func TestPubSubRPCtoHttp(t *testing.T) {
 		client.RequestWithUnmarshaledRequest(
 			&sidecar.PublishRequest{
 				Event: &sidecar.Event{
-					To: []string{"c"},
+					EventName: "go-c",
 					Data: &anypb.Any{
 						Value: []byte(`{"status": "completed"}`),
 					},
@@ -145,7 +146,7 @@ func TestPubSubRPCtoHttp(t *testing.T) {
 
 	pt := runner.NewParallelTest(t)
 
-	for _, brokerName := range []string{"a", "b"} {
+	for _, brokerName := range []string{"go-a", "go-b"} {
 		pt.Add(func(c *assert.CollectT) {
 			t.Logf("good request for broker %s", brokerName)
 
@@ -156,7 +157,7 @@ func TestPubSubRPCtoHttp(t *testing.T) {
 				client.RequestWithUnmarshaledRequest(
 					&sidecar.PublishRequest{
 						Event: &sidecar.Event{
-							To: []string{brokerName},
+							EventName: brokerName,
 							Data: &anypb.Any{
 								Value: []byte(fmt.Sprintf(`{"topic": "%s"}`, brokerName)),
 							},
@@ -178,9 +179,11 @@ func TestPubSubRPCtoHttp(t *testing.T) {
 			str, ok := data["topic"].(string)
 			require.True(t, ok)
 
-			require.True(c, fmt.Sprintf("/%s", str) == routeEvent.Route)
+			rpl := strings.Replace(str, "-", "/", -1)
 
-			require.True(c, routeEvent.Route == fmt.Sprintf("/%s", routeEvent.Event.EventName))
+			require.True(c, fmt.Sprintf("/%s", rpl) == routeEvent.Route)
+
+			require.True(c, routeEvent.Route == fmt.Sprintf("/%s", strings.Replace(routeEvent.Event.EventName, "-", "/", -1)))
 		})
 	}
 }
