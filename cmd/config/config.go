@@ -7,7 +7,7 @@ var (
 	Name               = os.Getenv("NAME")
 	Version            = os.Getenv("VERSION")
 	HttpAddress        = os.Getenv("HTTP_ADDRESS")
-	RpcAddress         = os.Getenv("RPC_ADDRESS")
+	GrpcAddress        = os.Getenv("GRPC_ADDRESS")
 	ServiceName        = os.Getenv("SERVICE_NAME")
 	ServicePort        = os.Getenv("SERVICE_PORT")
 	ServiceProtocol    = os.Getenv("SERVICE_PROTOCOL")

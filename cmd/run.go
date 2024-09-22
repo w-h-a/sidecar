@@ -7,20 +7,19 @@ import (
 
 	"github.com/gorilla/mux"
 	"github.com/urfave/cli"
-	"github.com/w-h-a/pkg/api"
-	"github.com/w-h-a/pkg/api/httpapi"
 	"github.com/w-h-a/pkg/broker"
 	"github.com/w-h-a/pkg/client/grpcclient"
 	"github.com/w-h-a/pkg/client/httpclient"
-	"github.com/w-h-a/pkg/server"
-	"github.com/w-h-a/pkg/server/grpcserver"
+	"github.com/w-h-a/pkg/serverv2"
+	grpcserver "github.com/w-h-a/pkg/serverv2/grpc"
+	httpserver "github.com/w-h-a/pkg/serverv2/http"
 	"github.com/w-h-a/pkg/sidecar"
 	"github.com/w-h-a/pkg/sidecar/custom"
 	"github.com/w-h-a/pkg/store"
 	"github.com/w-h-a/pkg/telemetry/log"
 	"github.com/w-h-a/sidecar/cmd/config"
+	"github.com/w-h-a/sidecar/cmd/grpc"
 	"github.com/w-h-a/sidecar/cmd/http"
-	"github.com/w-h-a/sidecar/cmd/rpc"
 )
 
 func run(ctx *cli.Context) {
@@ -69,18 +68,18 @@ func run(ctx *cli.Context) {
 
 	// get services
 	_, httpPort, _ := strings.Cut(config.HttpAddress, ":")
-	_, rpcPort, _ := strings.Cut(config.RpcAddress, ":")
+	_, grpcPort, _ := strings.Cut(config.GrpcAddress, ":")
 
 	sidecarOpts := []sidecar.SidecarOption{
 		sidecar.SidecarWithServiceName(config.ServiceName),
 		sidecar.SidecarWithHttpPort(sidecar.Port{Port: httpPort}),
-		sidecar.SidecarWithRpcPort(sidecar.Port{Port: rpcPort}),
+		sidecar.SidecarWithGrpcPort(sidecar.Port{Port: grpcPort}),
 		sidecar.SidecarWithServicePort(sidecar.Port{Port: config.ServicePort, Protocol: config.ServiceProtocol}),
 		sidecar.SidecarWithStores(stores),
 		sidecar.SidecarWithBrokers(brokers),
 	}
 
-	if config.ServiceProtocol == "rpc" {
+	if config.ServiceProtocol == "grpc" {
 		sidecarOpts = append(sidecarOpts, sidecar.SidecarWithClient(grpcClient))
 	} else {
 		sidecarOpts = append(sidecarOpts, sidecar.SidecarWithClient(httpClient))
@@ -97,69 +96,70 @@ func run(ctx *cli.Context) {
 		service.ReadEventsFromBroker(s)
 	}
 
+	// base server opts
+	opts := []serverv2.ServerOption{
+		serverv2.ServerWithNamespace(config.Namespace),
+		serverv2.ServerWithName(config.Name),
+		serverv2.ServerWithVersion(config.Version),
+	}
+
 	// create http server
 	router := mux.NewRouter()
 
-	publish := http.NewPublishHandler(service)
-	state := http.NewStateHandler(service)
+	httpHealth := http.NewHealthHandler()
+	httpPublish := http.NewPublishHandler(service)
+	httpState := http.NewStateHandler(service)
 
-	router.Methods("POST").Path("/publish").HandlerFunc(publish.Handle)
-	router.Methods("POST").Path("/state/{storeId}").HandlerFunc(state.HandlePost)
-	router.Methods("GET").Path("/state/{storeId}").HandlerFunc(state.HandleList)
-	router.Methods("GET").Path("/state/{storeId}/{key}").HandlerFunc(state.HandleGet)
-	router.Methods("DELETE").Path("/state/{storeId}/{key}").HandlerFunc(state.HandleDelete)
+	router.Methods("GET").Path("/health/check").HandlerFunc(httpHealth.Check)
+	router.Methods("POST").Path("/publish").HandlerFunc(httpPublish.Handle)
+	router.Methods("POST").Path("/state/{storeId}").HandlerFunc(httpState.HandlePost)
+	router.Methods("GET").Path("/state/{storeId}").HandlerFunc(httpState.HandleList)
+	router.Methods("GET").Path("/state/{storeId}/{key}").HandlerFunc(httpState.HandleGet)
+	router.Methods("DELETE").Path("/state/{storeId}/{key}").HandlerFunc(httpState.HandleDelete)
 
-	apiOpts := []api.ApiOption{
-		api.ApiWithNamespace(config.Namespace),
-		api.ApiWithName(config.Name),
-		api.ApiWithVersion(config.Version),
-		api.ApiWithAddress(config.HttpAddress),
+	httpOpts := []serverv2.ServerOption{
+		serverv2.ServerWithAddress(config.HttpAddress),
 	}
 
-	httpServer := httpapi.NewApi(apiOpts...)
+	httpOpts = append(httpOpts, opts...)
 
-	httpServer.Handle("/", router)
+	httpServer := httpserver.NewServer(httpOpts...)
 
-	// create rpc server
-	serverOpts := []server.ServerOption{
-		server.ServerWithNamespace(config.Namespace),
-		server.ServerWithName(config.Name),
-		server.ServerWithVersion(config.Version),
-		server.ServerWithAddress(config.RpcAddress),
+	httpServer.Handle(router)
+
+	// create grpc server
+	grpcOpts := []serverv2.ServerOption{
+		serverv2.ServerWithAddress(config.GrpcAddress),
 	}
 
-	grpcServer := grpcserver.NewServer(serverOpts...)
+	grpcOpts = append(grpcOpts, opts...)
 
-	rpc.RegisterStateHandler(
-		grpcServer,
-		rpc.NewStateHandler(
-			service,
-		),
-	)
+	grpcServer := grpcserver.NewServer(grpcOpts...)
 
-	rpc.RegisterPublishHandler(
-		grpcServer,
-		rpc.NewPublishHandler(
-			service,
-		),
-	)
+	grpcHealth := grpc.NewHealthHandler()
+	grpcPublish := grpc.NewPublishHandler(service)
+	grpcState := grpc.NewStateHandler(service)
+
+	grpcServer.Handle(grpcserver.NewHandler(grpcHealth))
+	grpcServer.Handle(grpcserver.NewHandler(grpcPublish))
+	grpcServer.Handle(grpcserver.NewHandler(grpcState))
 
 	// wait group and error chan
 	wg := &sync.WaitGroup{}
 	errCh := make(chan error, 2)
 
-	// run rpc server
+	// run grpc server
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		errCh <- grpcServer.Run()
+		errCh <- grpcServer.Start()
 	}()
 
 	// run http server
 	wg.Add(1)
 	go func() {
 		defer wg.Done()
-		errCh <- httpServer.Run()
+		errCh <- httpServer.Start()
 	}()
 
 	// block here

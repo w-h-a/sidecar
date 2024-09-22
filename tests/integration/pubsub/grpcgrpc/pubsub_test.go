@@ -1,7 +1,8 @@
-package state
+package grpcgrpc
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"testing"
@@ -15,8 +16,8 @@ import (
 	"github.com/w-h-a/pkg/proto/sidecar"
 	"github.com/w-h-a/pkg/runner"
 	"github.com/w-h-a/pkg/runner/binary"
-	"github.com/w-h-a/pkg/runner/http"
 	"github.com/w-h-a/pkg/telemetry/log"
+	"github.com/w-h-a/sidecar/tests/integration/pubsub/grpcgrpc/resources"
 	"google.golang.org/protobuf/types/known/anypb"
 )
 
@@ -24,6 +25,8 @@ var (
 	servicePort int
 	httpPort    int
 	grpcPort    int
+
+	grpcSubscriber *resources.GrpcSubscriber
 )
 
 func TestMain(m *testing.M) {
@@ -38,8 +41,8 @@ func TestMain(m *testing.M) {
 		log.Fatal(err)
 	}
 
-	serviceProcess := http.NewProcess(
-		runner.ProcessWithId("focal-service"),
+	grpcSubscriber = resources.NewGrpcSubscriber(
+		runner.ProcessWithId("grpc-subscriber"),
 		runner.ProcessWithEnvVars(map[string]string{
 			"PORT": fmt.Sprintf("%d", servicePort),
 		}),
@@ -67,23 +70,25 @@ func TestMain(m *testing.M) {
 			"GRPC_ADDRESS":     fmt.Sprintf(":%d", grpcPort),
 			"SERVICE_NAME":     "localhost",
 			"SERVICE_PORT":     fmt.Sprintf("%d", servicePort),
-			"SERVICE_PROTOCOL": "http",
+			"SERVICE_PROTOCOL": "grpc",
 			"STORE":            "memory",
-			"DB":               "mydb",
-			"STORES":           "mytable1,mytable2",
 			"BROKER":           "memory",
+			"CONSUMERS":        "go-a,go-b",
 		}),
 	)
 
 	r := runner.NewTestRunner(
-		runner.RunnerWithId("state"),
-		runner.RunnerWithProcesses(serviceProcess, sidecarProcess),
+		runner.RunnerWithId("grpc-grpc pubsub"),
+		runner.RunnerWithProcesses(
+			grpcSubscriber,
+			sidecarProcess,
+		),
 	)
 
 	os.Exit(r.Start(m))
 }
 
-func TestStateRPC(t *testing.T) {
+func TestPubSubGrpcToGrpc(t *testing.T) {
 	var err error
 
 	grpcClient := grpcclient.NewClient()
@@ -107,80 +112,88 @@ func TestStateRPC(t *testing.T) {
 		return rsp.Status == "ok"
 	}, 10*time.Second, 10*time.Millisecond)
 
+	require.Eventually(t, func() bool {
+		req := grpcClient.NewRequest(
+			client.RequestWithNamespace("default"),
+			client.RequestWithName("grpc-subscriber"),
+			client.RequestWithMethod("Health.Check"),
+			client.RequestWithUnmarshaledRequest(
+				&health.HealthRequest{},
+			),
+		)
+
+		rsp := &health.HealthResponse{}
+
+		if err := grpcClient.Call(context.Background(), req, rsp, client.CallWithAddress(fmt.Sprintf("127.0.0.1:%d", servicePort))); err != nil {
+			return false
+		}
+
+		return rsp.Status == "ok"
+	}, 10*time.Second, 10*time.Millisecond)
+
 	// TODO: more in parallel
 	t.Log("bad requests")
 
-	postReq := grpcClient.NewRequest(
+	pubReq := grpcClient.NewRequest(
 		client.RequestWithNamespace("default"),
 		client.RequestWithName("sidecar"),
-		client.RequestWithMethod("State.Post"),
+		client.RequestWithMethod("Publish.Publish"),
 		client.RequestWithUnmarshaledRequest(
-			&sidecar.PostStateRequest{
-				Records: []*sidecar.KeyVal{
-					{
-						Key: "key1",
-						Value: &anypb.Any{
-							Value: []byte("value1"),
-						},
+			&sidecar.PublishRequest{
+				Event: &sidecar.Event{
+					EventName: "go-c",
+					Data: &anypb.Any{
+						Value: []byte(`{"status": "completed"}`),
 					},
 				},
 			},
 		),
 	)
 
-	postRsp := &sidecar.PostStateResponse{}
+	pubRsp := &sidecar.PublishResponse{}
 
-	err = grpcClient.Call(context.Background(), postReq, postRsp, client.CallWithAddress(fmt.Sprintf("127.0.0.1:%d", grpcPort)))
+	err = grpcClient.Call(context.Background(), pubReq, pubRsp, client.CallWithAddress(fmt.Sprintf("127.0.0.1:%d", grpcPort)))
 	require.Error(t, err)
 
 	pt := runner.NewParallelTest(t)
 
-	for _, storeName := range []string{"mytable1", "mytable2"} {
+	for _, brokerName := range []string{"go-a", "go-b"} {
 		pt.Add(func(c *assert.CollectT) {
-			t.Logf("good request with store %s", storeName)
+			t.Logf("good request for broker %s", brokerName)
 
-			postReq := grpcClient.NewRequest(
+			pubReq := grpcClient.NewRequest(
 				client.RequestWithNamespace("default"),
 				client.RequestWithName("sidecar"),
-				client.RequestWithMethod("State.Post"),
+				client.RequestWithMethod("Publish.Publish"),
 				client.RequestWithUnmarshaledRequest(
-					&sidecar.PostStateRequest{
-						StoreId: storeName,
-						Records: []*sidecar.KeyVal{
-							{
-								Key: "key1",
-								Value: &anypb.Any{
-									Value: []byte("value1"),
-								},
+					&sidecar.PublishRequest{
+						Event: &sidecar.Event{
+							EventName: brokerName,
+							Data: &anypb.Any{
+								Value: []byte(fmt.Sprintf(`{"topic": "%s"}`, brokerName)),
 							},
 						},
 					},
 				),
 			)
 
-			postRsp := &sidecar.PostStateResponse{}
+			pubRsp := &sidecar.PublishResponse{}
 
-			err = grpcClient.Call(context.Background(), postReq, postRsp, client.CallWithAddress(fmt.Sprintf("127.0.0.1:%d", grpcPort)))
+			err = grpcClient.Call(context.Background(), pubReq, pubRsp, client.CallWithAddress(fmt.Sprintf("127.0.0.1:%d", grpcPort)))
 			require.NoError(c, err)
 
-			getReq := grpcClient.NewRequest(
-				client.RequestWithNamespace("default"),
-				client.RequestWithName("sidecar"),
-				client.RequestWithMethod("State.Get"),
-				client.RequestWithUnmarshaledRequest(
-					&sidecar.GetStateRequest{
-						StoreId: storeName,
-						Key:     "key1",
-					},
-				),
-			)
+			event := grpcSubscriber.Receive()
 
-			getRsp := &sidecar.GetStateResponse{}
+			data := map[string]string{}
 
-			err = grpcClient.Call(context.Background(), getReq, getRsp, client.CallWithAddress(fmt.Sprintf("127.0.0.1:%d", grpcPort)))
-			require.NoError(c, err)
+			err := json.Unmarshal(event.Event.Data.Value, &data)
+			require.NoError(t, err)
 
-			require.Equal(c, []byte("value1"), getRsp.Records[0].Value.Value)
+			str := data["topic"]
+
+			require.True(c, str == event.Method)
+
+			require.True(c, event.Method == event.Event.EventName)
 		})
 	}
 }

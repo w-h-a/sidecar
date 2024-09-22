@@ -59,8 +59,7 @@ func testHandler(w http.ResponseWriter, r *http.Request) {
 	rsp := ServiceResponse{}
 
 	event := sidecar.Event{
-		EventName: "test",
-		To:        []string{commandBody.Topic},
+		EventName: commandBody.Topic,
 		Data:      commandBody.Data,
 	}
 

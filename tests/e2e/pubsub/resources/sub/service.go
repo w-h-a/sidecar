@@ -34,7 +34,7 @@ func serviceRouter() *mux.Router {
 	router := mux.NewRouter()
 
 	router.HandleFunc("/", indexHandler).Methods("GET")
-	router.HandleFunc("/go-dummy", dummyHandler).Methods("POST")
+	router.HandleFunc("/go/dummy", dummyHandler).Methods("POST")
 	router.HandleFunc("/test", testHandler).Methods("POST")
 
 	return router
