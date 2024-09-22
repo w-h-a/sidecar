@@ -40,8 +40,8 @@ func (p *HttpSubscriber) Receive() *RouteEvent {
 	select {
 	case <-ctx.Done():
 		return nil
-	case routeEvent := <-p.event:
-		return routeEvent
+	case event := <-p.event:
+		return event
 	}
 }
 

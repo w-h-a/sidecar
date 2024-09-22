@@ -79,7 +79,7 @@ func TestMain(m *testing.M) {
 	)
 
 	r := runner.NewTestRunner(
-		runner.RunnerWithId("pubsub"),
+		runner.RunnerWithId("grpc-http pubsub"),
 		runner.RunnerWithProcesses(
 			httpSubscriber,
 			sidecarProcess,
@@ -89,7 +89,7 @@ func TestMain(m *testing.M) {
 	os.Exit(r.Start(m))
 }
 
-func TestPubSubGRPCtoHttp(t *testing.T) {
+func TestPubSubGrpctoHttp(t *testing.T) {
 	var err error
 
 	grpcClient := grpcclient.NewClient()
@@ -173,9 +173,9 @@ func TestPubSubGRPCtoHttp(t *testing.T) {
 			err = grpcClient.Call(context.Background(), pubReq, pubRsp, client.CallWithAddress(fmt.Sprintf("127.0.0.1:%d", grpcPort)))
 			require.NoError(c, err)
 
-			routeEvent := httpSubscriber.Receive()
+			event := httpSubscriber.Receive()
 
-			data, ok := routeEvent.Event.Data.(map[string]interface{})
+			data, ok := event.Event.Data.(map[string]interface{})
 			require.True(t, ok)
 
 			str, ok := data["topic"].(string)
@@ -183,9 +183,9 @@ func TestPubSubGRPCtoHttp(t *testing.T) {
 
 			rpl := strings.Replace(str, "-", "/", -1)
 
-			require.True(c, fmt.Sprintf("/%s", rpl) == routeEvent.Route)
+			require.True(c, fmt.Sprintf("/%s", rpl) == event.Route)
 
-			require.True(c, routeEvent.Route == fmt.Sprintf("/%s", strings.Replace(routeEvent.Event.EventName, "-", "/", -1)))
+			require.True(c, event.Route == fmt.Sprintf("/%s", strings.Replace(event.Event.EventName, "-", "/", -1)))
 		})
 	}
 }
