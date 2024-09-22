@@ -23,7 +23,7 @@ import (
 var (
 	servicePort int
 	httpPort    int
-	rpcPort     int
+	grpcPort    int
 )
 
 func TestMain(m *testing.M) {
@@ -50,7 +50,7 @@ func TestMain(m *testing.M) {
 		log.Fatal(err)
 	}
 
-	rpcPort, err = runner.GetFreePort()
+	grpcPort, err = runner.GetFreePort()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -64,7 +64,7 @@ func TestMain(m *testing.M) {
 			"NAME":             "sidecar",
 			"VERSION":          "v0.1.0-alpha.0",
 			"HTTP_ADDRESS":     fmt.Sprintf(":%d", httpPort),
-			"RPC_ADDRESS":      fmt.Sprintf(":%d", rpcPort),
+			"GRPC_ADDRESS":     fmt.Sprintf(":%d", grpcPort),
 			"SERVICE_NAME":     "localhost",
 			"SERVICE_PORT":     fmt.Sprintf("%d", servicePort),
 			"SERVICE_PROTOCOL": "http",
@@ -100,7 +100,7 @@ func TestStateRPC(t *testing.T) {
 
 		rsp := &health.HealthResponse{}
 
-		if err := grpcClient.Call(context.Background(), req, rsp, client.CallWithAddress(fmt.Sprintf("127.0.0.1:%d", rpcPort))); err != nil {
+		if err := grpcClient.Call(context.Background(), req, rsp, client.CallWithAddress(fmt.Sprintf("127.0.0.1:%d", grpcPort))); err != nil {
 			return false
 		}
 
@@ -130,7 +130,7 @@ func TestStateRPC(t *testing.T) {
 
 	postRsp := &sidecar.PostStateResponse{}
 
-	err = grpcClient.Call(context.Background(), postReq, postRsp, client.CallWithAddress(fmt.Sprintf("127.0.0.1:%d", rpcPort)))
+	err = grpcClient.Call(context.Background(), postReq, postRsp, client.CallWithAddress(fmt.Sprintf("127.0.0.1:%d", grpcPort)))
 	require.Error(t, err)
 
 	pt := runner.NewParallelTest(t)
@@ -160,7 +160,7 @@ func TestStateRPC(t *testing.T) {
 
 			postRsp := &sidecar.PostStateResponse{}
 
-			err = grpcClient.Call(context.Background(), postReq, postRsp, client.CallWithAddress(fmt.Sprintf("127.0.0.1:%d", rpcPort)))
+			err = grpcClient.Call(context.Background(), postReq, postRsp, client.CallWithAddress(fmt.Sprintf("127.0.0.1:%d", grpcPort)))
 			require.NoError(c, err)
 
 			getReq := grpcClient.NewRequest(
@@ -177,7 +177,7 @@ func TestStateRPC(t *testing.T) {
 
 			getRsp := &sidecar.GetStateResponse{}
 
-			err = grpcClient.Call(context.Background(), getReq, getRsp, client.CallWithAddress(fmt.Sprintf("127.0.0.1:%d", rpcPort)))
+			err = grpcClient.Call(context.Background(), getReq, getRsp, client.CallWithAddress(fmt.Sprintf("127.0.0.1:%d", grpcPort)))
 			require.NoError(c, err)
 
 			require.Equal(c, []byte("value1"), getRsp.Records[0].Value.Value)

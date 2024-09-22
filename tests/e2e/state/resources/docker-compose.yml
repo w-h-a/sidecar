@@ -23,7 +23,7 @@ services:
       NAME: 'state-sidecar'
       VERSION: '0.1.0-alpha.0'
       HTTP_ADDRESS: ':3501'
-      RPC_ADDRESS: ':50001'
+      GRPC_ADDRESS: ':50001'
       SERVICE_NAME: 'localhost'
       SERVICE_PORT: '3000'
       SERVICE_PROTOCOL: 'http'

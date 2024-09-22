@@ -1,4 +1,4 @@
-package pubsub
+package grpchttp
 
 import (
 	"context"
@@ -16,18 +16,18 @@ import (
 	"github.com/w-h-a/pkg/proto/sidecar"
 	"github.com/w-h-a/pkg/runner"
 	"github.com/w-h-a/pkg/runner/binary"
-	"github.com/w-h-a/pkg/runner/http/subscriber"
 	"github.com/w-h-a/pkg/telemetry/log"
 	"github.com/w-h-a/pkg/utils/httputils"
+	"github.com/w-h-a/sidecar/tests/integration/pubsub/grpchttp/resources"
 	"google.golang.org/protobuf/types/known/anypb"
 )
 
 var (
 	servicePort int
 	httpPort    int
-	rpcPort     int
+	grpcPort    int
 
-	serviceProcess *subscriber.HttpSubscriber
+	httpSubscriber *resources.HttpSubscriber
 )
 
 func TestMain(m *testing.M) {
@@ -42,12 +42,11 @@ func TestMain(m *testing.M) {
 		log.Fatal(err)
 	}
 
-	serviceProcess = subscriber.NewSubscriber(
-		runner.ProcessWithId("focal-service"),
+	httpSubscriber = resources.NewHttpSubscriber(
+		runner.ProcessWithId("http-subscriber"),
 		runner.ProcessWithEnvVars(map[string]string{
 			"PORT": fmt.Sprintf("%d", servicePort),
 		}),
-		subscriber.HttpSubscriberWithRoutes("/go/a", "/go/b"),
 	)
 
 	httpPort, err = runner.GetFreePort()
@@ -55,7 +54,7 @@ func TestMain(m *testing.M) {
 		log.Fatal(err)
 	}
 
-	rpcPort, err = runner.GetFreePort()
+	grpcPort, err = runner.GetFreePort()
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -69,7 +68,7 @@ func TestMain(m *testing.M) {
 			"NAME":             "sidecar",
 			"VERSION":          "v0.1.0-alpha.0",
 			"HTTP_ADDRESS":     fmt.Sprintf(":%d", httpPort),
-			"RPC_ADDRESS":      fmt.Sprintf(":%d", rpcPort),
+			"GRPC_ADDRESS":     fmt.Sprintf(":%d", grpcPort),
 			"SERVICE_NAME":     "localhost",
 			"SERVICE_PORT":     fmt.Sprintf("%d", servicePort),
 			"SERVICE_PROTOCOL": "http",
@@ -81,13 +80,16 @@ func TestMain(m *testing.M) {
 
 	r := runner.NewTestRunner(
 		runner.RunnerWithId("pubsub"),
-		runner.RunnerWithProcesses(serviceProcess, sidecarProcess),
+		runner.RunnerWithProcesses(
+			httpSubscriber,
+			sidecarProcess,
+		),
 	)
 
 	os.Exit(r.Start(m))
 }
 
-func TestPubSubRPCtoHttp(t *testing.T) {
+func TestPubSubGRPCtoHttp(t *testing.T) {
 	var err error
 
 	grpcClient := grpcclient.NewClient()
@@ -104,7 +106,7 @@ func TestPubSubRPCtoHttp(t *testing.T) {
 
 		rsp := &health.HealthResponse{}
 
-		if err := grpcClient.Call(context.Background(), req, rsp, client.CallWithAddress(fmt.Sprintf("127.0.0.1:%d", rpcPort))); err != nil {
+		if err := grpcClient.Call(context.Background(), req, rsp, client.CallWithAddress(fmt.Sprintf("127.0.0.1:%d", grpcPort))); err != nil {
 			return false
 		}
 
@@ -141,7 +143,7 @@ func TestPubSubRPCtoHttp(t *testing.T) {
 
 	pubRsp := &sidecar.PublishResponse{}
 
-	err = grpcClient.Call(context.Background(), pubReq, pubRsp, client.CallWithAddress(fmt.Sprintf("127.0.0.1:%d", rpcPort)))
+	err = grpcClient.Call(context.Background(), pubReq, pubRsp, client.CallWithAddress(fmt.Sprintf("127.0.0.1:%d", grpcPort)))
 	require.Error(t, err)
 
 	pt := runner.NewParallelTest(t)
@@ -168,10 +170,10 @@ func TestPubSubRPCtoHttp(t *testing.T) {
 
 			pubRsp := &sidecar.PublishResponse{}
 
-			err = grpcClient.Call(context.Background(), pubReq, pubRsp, client.CallWithAddress(fmt.Sprintf("127.0.0.1:%d", rpcPort)))
+			err = grpcClient.Call(context.Background(), pubReq, pubRsp, client.CallWithAddress(fmt.Sprintf("127.0.0.1:%d", grpcPort)))
 			require.NoError(c, err)
 
-			routeEvent := serviceProcess.Receive()
+			routeEvent := httpSubscriber.Receive()
 
 			data, ok := routeEvent.Event.Data.(map[string]interface{})
 			require.True(t, ok)

@@ -1,10 +1,9 @@
-package rpc
+package grpc
 
 import (
 	"context"
 
 	pb "github.com/w-h-a/pkg/proto/sidecar"
-	"github.com/w-h-a/pkg/server"
 	"github.com/w-h-a/pkg/sidecar"
 	"github.com/w-h-a/pkg/utils/errorutils"
 )
@@ -13,11 +12,15 @@ type PublishHandler interface {
 	Publish(ctx context.Context, req *pb.PublishRequest, rsp *pb.PublishResponse) error
 }
 
+type Publish struct {
+	PublishHandler
+}
+
 type publishHandler struct {
 	service sidecar.Sidecar
 }
 
-func (c *publishHandler) Publish(ctx context.Context, req *pb.PublishRequest, rsp *pb.PublishResponse) error {
+func (h *publishHandler) Publish(ctx context.Context, req *pb.PublishRequest, rsp *pb.PublishResponse) error {
 	if req.Event == nil {
 		return errorutils.BadRequest("sidecar", "event is required")
 	}
@@ -31,7 +34,7 @@ func (c *publishHandler) Publish(ctx context.Context, req *pb.PublishRequest, rs
 		Data:      req.Event.Data.Value,
 	}
 
-	if err := c.service.WriteEventToBroker(event); err != nil && err == sidecar.ErrComponentNotFound {
+	if err := h.service.WriteEventToBroker(event); err != nil && err == sidecar.ErrComponentNotFound {
 		return errorutils.NotFound("sidecar", "%v: %s", err, req.Event.EventName)
 	} else if err != nil {
 		return errorutils.InternalServerError("sidecar", "failed to publish event: %v", err)
@@ -41,18 +44,5 @@ func (c *publishHandler) Publish(ctx context.Context, req *pb.PublishRequest, rs
 }
 
 func NewPublishHandler(s sidecar.Sidecar) PublishHandler {
-	return &publishHandler{s}
-}
-
-type Publish struct {
-	PublishHandler
-}
-
-func RegisterPublishHandler(s server.Server, handler PublishHandler, opts ...server.HandlerOption) error {
-	return s.Handle(
-		s.NewHandler(
-			&Publish{handler},
-			opts...,
-		),
-	)
+	return &Publish{&publishHandler{s}}
 }

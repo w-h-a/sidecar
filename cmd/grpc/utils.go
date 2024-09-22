@@ -1,4 +1,4 @@
-package rpc
+package grpc
 
 import (
 	pb "github.com/w-h-a/pkg/proto/sidecar"
