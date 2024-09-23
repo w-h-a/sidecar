@@ -44,7 +44,7 @@ func (h *stateHandler) List(ctx context.Context, req *pb.ListStateRequest, rsp *
 	if err != nil && err == sidecar.ErrComponentNotFound {
 		return errorutils.NotFound("sidecar", "%v: %s", err, req.StoreId)
 	} else if err != nil {
-		return errorutils.InternalServerError("sidecar", "failed to retrive state from store %s: %v", req.StoreId, err)
+		return errorutils.InternalServerError("sidecar", "failed to retrieve state from store %s: %v", req.StoreId, err)
 	}
 
 	rsp.Records = SerializeRecords(recs)

@@ -32,6 +32,7 @@ services:
       DB: 'test'
       STORES: 'test'
       BROKER: 'memory'
+      SECRET: 'env'
     network_mode: 'service:state'
 networks:
   state-net:

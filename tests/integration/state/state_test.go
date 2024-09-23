@@ -72,6 +72,7 @@ func TestMain(m *testing.M) {
 			"DB":               "mydb",
 			"STORES":           "mytable1,mytable2",
 			"BROKER":           "memory",
+			"SECRET":           "env",
 		}),
 	)
 

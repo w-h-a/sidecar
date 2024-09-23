@@ -6,6 +6,9 @@ import (
 	"github.com/w-h-a/pkg/broker"
 	memorybroker "github.com/w-h-a/pkg/broker/memory"
 	"github.com/w-h-a/pkg/broker/snssqs"
+	"github.com/w-h-a/pkg/security/secret"
+	"github.com/w-h-a/pkg/security/secret/env"
+	"github.com/w-h-a/pkg/security/secret/ssm"
 	"github.com/w-h-a/pkg/store"
 	"github.com/w-h-a/pkg/store/cockroach"
 	memorystore "github.com/w-h-a/pkg/store/memory"
@@ -21,12 +24,19 @@ var (
 		"snssqs": snssqs.NewBroker,
 		"memory": memorybroker.NewBroker,
 	}
+
+	defaultSecrets = map[string]func(...secret.SecretOption) secret.Secret{
+		"ssm": ssm.NewSecret,
+		"env": env.NewSecret,
+	}
 )
 
 func GetStoreBuilder(s string) (func(...store.StoreOption) store.Store, error) {
 	storeBuilder, exists := defaultStores[s]
-	if !exists {
+	if !exists && len(s) > 0 {
 		return nil, fmt.Errorf("store %s is not supported", s)
+	} else if !exists {
+		return nil, nil
 	}
 	return storeBuilder, nil
 }
@@ -39,10 +49,28 @@ func MakeStore(storeBuilder func(...store.StoreOption) store.Store, nodes []stri
 	)
 }
 
+func GetSecretBuilder(s string) (func(...secret.SecretOption) secret.Secret, error) {
+	secretBuilder, exists := defaultSecrets[s]
+	if !exists && len(s) > 0 {
+		return nil, fmt.Errorf("secret store %s is not supported", s)
+	} else if !exists {
+		return nil, nil
+	}
+	return secretBuilder, nil
+}
+
+func MakeSecret(secretBuilder func(...secret.SecretOption) secret.Secret, nodes []string) secret.Secret {
+	return secretBuilder(
+		secret.SecretWithNodes(nodes...),
+	)
+}
+
 func GetBrokerBuilder(s string) (func(...broker.BrokerOption) broker.Broker, error) {
 	brokerBuilder, exists := defaultBrokers[s]
-	if !exists {
+	if !exists && len(s) > 0 {
 		return nil, fmt.Errorf("broker %s is not supported", s)
+	} else if !exists {
+		return nil, nil
 	}
 	return brokerBuilder, nil
 }

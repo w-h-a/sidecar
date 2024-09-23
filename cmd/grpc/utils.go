@@ -34,3 +34,9 @@ func SerializeRecords(recs []*store.Record) []*pb.KeyVal {
 
 	return pairs
 }
+
+func SerializeSecret(secret *sidecar.Secret) *pb.Secret {
+	return &pb.Secret{
+		Data: secret.Data,
+	}
+}

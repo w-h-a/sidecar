@@ -74,6 +74,7 @@ func TestMain(m *testing.M) {
 			"STORE":            "memory",
 			"BROKER":           "memory",
 			"CONSUMERS":        "go-a,go-b",
+			"SECRET":           "env",
 		}),
 	)
 

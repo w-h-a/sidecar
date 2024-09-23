@@ -9,10 +9,11 @@ import (
 	"github.com/w-h-a/pkg/utils/errorutils"
 )
 
-func BadRequest(w http.ResponseWriter, description string) {
-	e := errorutils.BadRequest("sidecar", description)
-	w.WriteHeader(400)
-	w.Write([]byte(e.Error()))
+// TODO: refactor?
+func ErrResponse(w http.ResponseWriter, err error) {
+	internal := err.(*errorutils.Error)
+	w.WriteHeader(int(internal.Code))
+	w.Write([]byte(internal.Error()))
 }
 
 func SerializeRecords(recs []*store.Record) ([]sidecar.Record, error) {
