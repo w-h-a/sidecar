@@ -2,26 +2,27 @@ package http
 
 import (
 	"encoding/json"
-	"net/http"
+	gohttp "net/http"
 
 	"github.com/gorilla/mux"
+	"github.com/w-h-a/pkg/serverv2/http"
 	"github.com/w-h-a/pkg/sidecar"
 	"github.com/w-h-a/pkg/store"
 	"github.com/w-h-a/pkg/utils/errorutils"
 )
 
 type StateHandler interface {
-	HandlePost(w http.ResponseWriter, r *http.Request)
-	HandleList(w http.ResponseWriter, r *http.Request)
-	HandleGet(w http.ResponseWriter, r *http.Request)
-	HandleDelete(w http.ResponseWriter, r *http.Request)
+	HandlePost(w gohttp.ResponseWriter, r *gohttp.Request)
+	HandleList(w gohttp.ResponseWriter, r *gohttp.Request)
+	HandleGet(w gohttp.ResponseWriter, r *gohttp.Request)
+	HandleDelete(w gohttp.ResponseWriter, r *gohttp.Request)
 }
 
 type stateHandler struct {
 	service sidecar.Sidecar
 }
 
-func (h *stateHandler) HandlePost(w http.ResponseWriter, r *http.Request) {
+func (h *stateHandler) HandlePost(w gohttp.ResponseWriter, r *gohttp.Request) {
 	params := mux.Vars(r)
 
 	storeId := params["storeId"]
@@ -29,7 +30,7 @@ func (h *stateHandler) HandlePost(w http.ResponseWriter, r *http.Request) {
 	defer r.Body.Close()
 
 	if r.Body == nil {
-		ErrResponse(w, errorutils.BadRequest("sidecar", "expected a body as array of records"))
+		http.ErrResponse(w, errorutils.BadRequest("sidecar", "expected a body as array of records"))
 		return
 	}
 
@@ -38,7 +39,7 @@ func (h *stateHandler) HandlePost(w http.ResponseWriter, r *http.Request) {
 	decoder := json.NewDecoder(r.Body)
 
 	if err := decoder.Decode(&records); err != nil {
-		ErrResponse(w, errorutils.BadRequest("sidecar", "failed to decode request: "+err.Error()))
+		http.ErrResponse(w, errorutils.BadRequest("sidecar", "failed to decode request: "+err.Error()))
 		return
 	}
 
@@ -48,55 +49,45 @@ func (h *stateHandler) HandlePost(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := h.service.SaveStateToStore(state); err != nil && err == sidecar.ErrComponentNotFound {
-		ErrResponse(w, errorutils.NotFound("sidecar", "%s: %s", err.Error(), storeId))
+		http.ErrResponse(w, errorutils.NotFound("sidecar", "%s: %s", err.Error(), storeId))
 		return
 	} else if err != nil {
-		ErrResponse(w, errorutils.InternalServerError("failed to save state to store %s: %v", storeId, err))
+		http.ErrResponse(w, errorutils.InternalServerError("failed to save state to store %s: %v", storeId, err))
 		return
 	}
 
-	w.WriteHeader(200)
-	w.Write(nil)
+	http.OkResponse(w, map[string]interface{}{})
 }
 
-func (h *stateHandler) HandleList(w http.ResponseWriter, r *http.Request) {
+func (h *stateHandler) HandleList(w gohttp.ResponseWriter, r *gohttp.Request) {
 	params := mux.Vars(r)
 
 	storeId := params["storeId"]
 
 	recs, err := h.service.ListStateFromStore(storeId)
 	if err != nil && err == sidecar.ErrComponentNotFound {
-		ErrResponse(w, errorutils.NotFound("sidecar", "%s: %s", err.Error(), storeId))
+		http.ErrResponse(w, errorutils.NotFound("sidecar", "%s: %s", err.Error(), storeId))
 		return
 	} else if err != nil {
-		ErrResponse(w, errorutils.InternalServerError("sidecar", "failed to retrieve state from store %s: %v", storeId, err))
+		http.ErrResponse(w, errorutils.InternalServerError("sidecar", "failed to retrieve state from store %s: %v", storeId, err))
 		return
 	}
 
 	if len(recs) == 0 {
-		w.WriteHeader(200)
-		w.Write([]byte(`[]`))
+		http.OkResponse(w, []sidecar.Record{})
 		return
 	}
 
 	sidecarRecords, err := SerializeRecords(recs)
 	if err != nil {
-		ErrResponse(w, errorutils.InternalServerError("sidecar", "failed to serialize records: %v", err))
+		http.ErrResponse(w, errorutils.InternalServerError("sidecar", "failed to serialize records: %v", err))
 		return
 	}
 
-	bs, err := json.Marshal(sidecarRecords)
-	if err != nil {
-		ErrResponse(w, errorutils.InternalServerError("sidecar", "failed to marshal records: %v", err))
-		return
-	}
-
-	w.Header().Set("content-type", "application/json")
-	w.WriteHeader(200)
-	w.Write(bs)
+	http.OkResponse(w, sidecarRecords)
 }
 
-func (h *stateHandler) HandleGet(w http.ResponseWriter, r *http.Request) {
+func (h *stateHandler) HandleGet(w gohttp.ResponseWriter, r *gohttp.Request) {
 	params := mux.Vars(r)
 
 	storeId := params["storeId"]
@@ -105,40 +96,31 @@ func (h *stateHandler) HandleGet(w http.ResponseWriter, r *http.Request) {
 
 	recs, err := h.service.SingleStateFromStore(storeId, key)
 	if err != nil && err == sidecar.ErrComponentNotFound {
-		ErrResponse(w, errorutils.NotFound("sidecar", "%s: %s", err.Error(), storeId))
+		http.ErrResponse(w, errorutils.NotFound("sidecar", "%s: %s", err.Error(), storeId))
 		return
 	} else if err != nil && err == store.ErrRecordNotFound {
-		ErrResponse(w, errorutils.NotFound("sidecar", "there is no such record at store %s and key %s: %v", storeId, key, err))
+		http.ErrResponse(w, errorutils.NotFound("sidecar", "there is no such record at store %s and key %s: %v", storeId, key, err))
 		return
 	} else if err != nil {
-		ErrResponse(w, errorutils.InternalServerError("sidecar", "failed to retrieve state from store %s and key %s: %v", storeId, key, err))
+		http.ErrResponse(w, errorutils.InternalServerError("sidecar", "failed to retrieve state from store %s and key %s: %v", storeId, key, err))
 		return
 	}
 
 	if len(recs) == 0 {
-		w.WriteHeader(200)
-		w.Write([]byte(`[]`))
+		http.OkResponse(w, []sidecar.Record{})
 		return
 	}
 
 	sidecarRecords, err := SerializeRecords(recs)
 	if err != nil {
-		ErrResponse(w, errorutils.InternalServerError("sidecar", "failed to serialize records: %v", err))
+		http.ErrResponse(w, errorutils.InternalServerError("sidecar", "failed to serialize records: %v", err))
 		return
 	}
 
-	bs, err := json.Marshal(sidecarRecords)
-	if err != nil {
-		ErrResponse(w, errorutils.InternalServerError("sidecar", "failed to marshal records: %v", err))
-		return
-	}
-
-	w.Header().Set("content-type", "application/json")
-	w.WriteHeader(200)
-	w.Write(bs)
+	http.OkResponse(w, sidecarRecords)
 }
 
-func (h *stateHandler) HandleDelete(w http.ResponseWriter, r *http.Request) {
+func (h *stateHandler) HandleDelete(w gohttp.ResponseWriter, r *gohttp.Request) {
 	params := mux.Vars(r)
 
 	storeId := params["storeId"]
@@ -146,15 +128,14 @@ func (h *stateHandler) HandleDelete(w http.ResponseWriter, r *http.Request) {
 	key := params["key"]
 
 	if err := h.service.RemoveStateFromStore(storeId, key); err != nil && err == sidecar.ErrComponentNotFound {
-		ErrResponse(w, errorutils.NotFound("sidecar", "%s: %s", err.Error(), storeId))
+		http.ErrResponse(w, errorutils.NotFound("sidecar", "%s: %s", err.Error(), storeId))
 		return
 	} else if err != nil {
-		ErrResponse(w, errorutils.InternalServerError("sidecar", "failed to remove state from store %s and key %s: %v", storeId, key, err))
+		http.ErrResponse(w, errorutils.InternalServerError("sidecar", "failed to remove state from store %s and key %s: %v", storeId, key, err))
 		return
 	}
 
-	w.WriteHeader(200)
-	w.Write(nil)
+	http.OkResponse(w, map[string]interface{}{})
 }
 
 func NewStateHandler(s sidecar.Sidecar) StateHandler {
