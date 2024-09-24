@@ -21,6 +21,7 @@ var (
 	Consumers          = Split(os.Getenv("CONSUMERS"))
 	Secret             = os.Getenv("SECRET")
 	SecretAddress      = os.Getenv("SECRET_ADDRESS")
+	SecretPrefix       = os.Getenv("SECRET_PREFIX")
 	AwsAccessKeyId     = os.Getenv("AWS_ACCESS_KEY_ID")
 	AwsSecretAccessKey = os.Getenv("AWS_SECRET_ACCESS_KEY")
 )

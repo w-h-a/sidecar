@@ -56,7 +56,7 @@ func run(ctx *cli.Context) {
 	}
 
 	if sc != nil {
-		secrets[config.Secret] = MakeSecret(sc, []string{config.SecretAddress})
+		secrets[config.Secret] = MakeSecret(sc, []string{config.SecretAddress}, config.SecretPrefix)
 	}
 
 	bk, err := GetBrokerBuilder(config.Broker)

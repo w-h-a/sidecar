@@ -7,7 +7,8 @@ require (
 	github.com/gorilla/mux v1.8.1
 	github.com/stretchr/testify v1.9.0
 	github.com/urfave/cli v1.22.15
-	github.com/w-h-a/pkg v0.32.1-rc.2
+	github.com/w-h-a/pkg v0.32.1-rc.3
+	google.golang.org/grpc v1.65.0
 	google.golang.org/protobuf v1.34.2
 )
 
@@ -41,7 +42,6 @@ require (
 	golang.org/x/sys v0.24.0 // indirect
 	golang.org/x/text v0.17.0 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20240822170219-fc7c04adadcd // indirect
-	google.golang.org/grpc v1.65.0 // indirect
 	gopkg.in/check.v1 v1.0.0-20201130134442-10cb98267c6c // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
 )

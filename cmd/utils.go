@@ -59,9 +59,10 @@ func GetSecretBuilder(s string) (func(...secret.SecretOption) secret.Secret, err
 	return secretBuilder, nil
 }
 
-func MakeSecret(secretBuilder func(...secret.SecretOption) secret.Secret, nodes []string) secret.Secret {
+func MakeSecret(secretBuilder func(...secret.SecretOption) secret.Secret, nodes []string, prefix string) secret.Secret {
 	return secretBuilder(
 		secret.SecretWithNodes(nodes...),
+		secret.SecretWithPrefix(prefix),
 	)
 }
 
