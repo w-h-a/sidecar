@@ -118,7 +118,9 @@ func create(states []SidecarState) error {
 func list() ([]SidecarState, error) {
 	log.Println("processing list request")
 
-	rsp, err := http.Get(fmt.Sprintf("%s/%s", stateURL, "test"))
+	url := fmt.Sprintf("%s/%s", stateURL, "test")
+
+	rsp, err := http.Get(url)
 	if err != nil {
 		return nil, err
 	}
