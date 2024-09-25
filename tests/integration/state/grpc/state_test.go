@@ -1,4 +1,4 @@
-package state
+package grpc
 
 import (
 	"context"
@@ -72,6 +72,7 @@ func TestMain(m *testing.M) {
 			"DB":               "mydb",
 			"STORES":           "mytable1,mytable2",
 			"BROKER":           "memory",
+			"SECRET":           "env",
 		}),
 	)
 
@@ -83,7 +84,7 @@ func TestMain(m *testing.M) {
 	os.Exit(r.Start(m))
 }
 
-func TestStateRPC(t *testing.T) {
+func TestStateGrpc(t *testing.T) {
 	var err error
 
 	grpcClient := grpcclient.NewClient()

@@ -33,7 +33,7 @@ func TestMain(m *testing.M) {
 		log.Fatal(err)
 	}
 
-	dbPath := fmt.Sprintf("%s/resources/docker-compose-db.yml", dir)
+	dbPath := fmt.Sprintf("%s/resources/docker-compose-state.yml", dir)
 
 	dbProcess := docker.NewProcess(
 		runner.ProcessWithId(dbPath),
@@ -143,8 +143,6 @@ func TestState(t *testing.T) {
 				t.Logf("got %#+v", svcRsp.States)
 
 				require.True(t, slicesEqual(step.Expected.States, svcRsp.States))
-
-				time.Sleep(1 * time.Second)
 			}
 		})
 	}

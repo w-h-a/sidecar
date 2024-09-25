@@ -37,7 +37,7 @@ func TestMain(m *testing.M) {
 		log.Fatal(err)
 	}
 
-	brokerPath := fmt.Sprintf("%s/resources/docker-compose-broker.yml", dir)
+	brokerPath := fmt.Sprintf("%s/resources/docker-compose-pubsub.yml", dir)
 
 	brokerProcess := docker.NewProcess(
 		runner.ProcessWithId(brokerPath),
@@ -150,8 +150,6 @@ func sendToPubService(t *testing.T) ReceivedMessagesResponse {
 		require.NoError(t, err)
 
 		t.Logf("publish response %#+v", svcRsp)
-
-		time.Sleep(1 * time.Second)
 	}
 
 	return ReceivedMessagesResponse{

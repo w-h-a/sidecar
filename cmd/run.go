@@ -10,6 +10,7 @@ import (
 	"github.com/w-h-a/pkg/broker"
 	"github.com/w-h-a/pkg/client/grpcclient"
 	"github.com/w-h-a/pkg/client/httpclient"
+	"github.com/w-h-a/pkg/security/secret"
 	"github.com/w-h-a/pkg/serverv2"
 	grpcserver "github.com/w-h-a/pkg/serverv2/grpc"
 	httpserver "github.com/w-h-a/pkg/serverv2/http"
@@ -32,17 +33,30 @@ func run(ctx *cli.Context) {
 
 	brokers := map[string]broker.Broker{}
 
+	secrets := map[string]secret.Secret{}
+
 	st, err := GetStoreBuilder(config.Store)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	for _, s := range config.Stores {
-		if len(s) == 0 {
-			continue
-		}
+	if st != nil {
+		for _, s := range config.Stores {
+			if len(s) == 0 {
+				continue
+			}
 
-		stores[s] = MakeStore(st, []string{config.StoreAddress}, config.DB, s)
+			stores[s] = MakeStore(st, []string{config.StoreAddress}, config.DB, s)
+		}
+	}
+
+	sc, err := GetSecretBuilder(config.Secret)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if sc != nil {
+		secrets[config.Secret] = MakeSecret(sc, []string{config.SecretAddress}, config.SecretPrefix)
 	}
 
 	bk, err := GetBrokerBuilder(config.Broker)
@@ -50,20 +64,22 @@ func run(ctx *cli.Context) {
 		log.Fatal(err)
 	}
 
-	for _, s := range config.Producers {
-		if len(s) == 0 {
-			continue
+	if bk != nil {
+		for _, s := range config.Producers {
+			if len(s) == 0 {
+				continue
+			}
+
+			brokers[s] = MakeProducer(bk, []string{config.BrokerAddress}, s)
 		}
 
-		brokers[s] = MakeProducer(bk, []string{config.BrokerAddress}, s)
-	}
+		for _, s := range config.Consumers {
+			if len(s) == 0 {
+				continue
+			}
 
-	for _, s := range config.Consumers {
-		if len(s) == 0 {
-			continue
+			brokers[s] = MakeConsumer(bk, []string{config.BrokerAddress}, s, config.Broker == "memory")
 		}
-
-		brokers[s] = MakeConsumer(bk, []string{config.BrokerAddress}, s, config.Broker == "memory")
 	}
 
 	// get services
@@ -77,6 +93,7 @@ func run(ctx *cli.Context) {
 		sidecar.SidecarWithServicePort(sidecar.Port{Port: config.ServicePort, Protocol: config.ServiceProtocol}),
 		sidecar.SidecarWithStores(stores),
 		sidecar.SidecarWithBrokers(brokers),
+		sidecar.SidecarWithSecrets(secrets),
 	}
 
 	if config.ServiceProtocol == "grpc" {
@@ -109,6 +126,7 @@ func run(ctx *cli.Context) {
 	httpHealth := http.NewHealthHandler()
 	httpPublish := http.NewPublishHandler(service)
 	httpState := http.NewStateHandler(service)
+	httpSecret := http.NewSecretHandler(service)
 
 	router.Methods("GET").Path("/health/check").HandlerFunc(httpHealth.Check)
 	router.Methods("POST").Path("/publish").HandlerFunc(httpPublish.Handle)
@@ -116,6 +134,7 @@ func run(ctx *cli.Context) {
 	router.Methods("GET").Path("/state/{storeId}").HandlerFunc(httpState.HandleList)
 	router.Methods("GET").Path("/state/{storeId}/{key}").HandlerFunc(httpState.HandleGet)
 	router.Methods("DELETE").Path("/state/{storeId}/{key}").HandlerFunc(httpState.HandleDelete)
+	router.Methods("GET").Path("/secret/{secretId}/{key}").HandlerFunc(httpSecret.HandleGet)
 
 	httpOpts := []serverv2.ServerOption{
 		serverv2.ServerWithAddress(config.HttpAddress),
@@ -139,10 +158,12 @@ func run(ctx *cli.Context) {
 	grpcHealth := grpc.NewHealthHandler()
 	grpcPublish := grpc.NewPublishHandler(service)
 	grpcState := grpc.NewStateHandler(service)
+	grpcSecret := grpc.NewSecretHandler(service)
 
 	grpcServer.Handle(grpcserver.NewHandler(grpcHealth))
 	grpcServer.Handle(grpcserver.NewHandler(grpcPublish))
 	grpcServer.Handle(grpcserver.NewHandler(grpcState))
+	grpcServer.Handle(grpcserver.NewHandler(grpcSecret))
 
 	// wait group and error chan
 	wg := &sync.WaitGroup{}

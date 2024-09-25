@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io"
@@ -14,22 +13,19 @@ import (
 
 const servicePort = 3000
 
-const stateURL = "http://localhost:3501/state"
+const secretURL = "http://localhost:3501/secret"
 
 type RequestResponse struct {
-	StartTime int            `json:"start_time,omitempty"`
-	EndTime   int            `json:"end_time,omitempty"`
-	States    []SidecarState `json:"states,omitempty"`
-	Message   string         `json:"message,omitempty"`
+	StartTime int             `json:"start_time,omitempty"`
+	EndTime   int             `json:"end_time,omitempty"`
+	Secrets   []SidecarSecret `json:"secrets,omitempty"`
+	Message   string          `json:"message,omitempty"`
 }
 
-type SidecarState struct {
-	Key   string        `json:"key,omitempty"`
-	Value *ServiceState `json:"value,omitempty"`
-}
-
-type ServiceState struct {
-	Data string `json:"data,omitempty"`
+type SidecarSecret struct {
+	Store string            `json:"store,omitempty"`
+	Key   string            `json:"key,omitempty"`
+	Data  map[string]string `json:"data,omitempty"`
 }
 
 func serviceRouter() *mux.Router {
@@ -48,7 +44,7 @@ func indexHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func testHandler(w http.ResponseWriter, r *http.Request) {
-	log.Println("testHander has been called")
+	log.Println("testHandler has been called")
 
 	var req RequestResponse
 
@@ -73,12 +69,8 @@ func testHandler(w http.ResponseWriter, r *http.Request) {
 	rsp.StartTime = int(time.Now().UnixMilli())
 
 	switch cmd {
-	case "create":
-		err = create(req.States)
-	case "list":
-		rsp.States, err = list()
-	case "delete":
-		err = delete(req.States)
+	case "get":
+		rsp.Secrets, err = getAll(req.Secrets)
 	default:
 		err = fmt.Errorf("invalid URI: %s", uri)
 		statusCode = http.StatusBadRequest
@@ -97,28 +89,31 @@ func testHandler(w http.ResponseWriter, r *http.Request) {
 	json.NewEncoder(w).Encode(rsp)
 }
 
-func create(states []SidecarState) error {
-	log.Printf("processing create request for %d entries", len(states))
+func getAll(secrets []SidecarSecret) ([]SidecarSecret, error) {
+	log.Printf("processing get request for %d secrets.", len(secrets))
 
-	bs, err := json.Marshal(states)
-	if err != nil {
-		return err
+	output := make([]SidecarSecret, 0, len(secrets))
+
+	for _, secret := range secrets {
+		data, err := get(secret.Store, secret.Key)
+		if err != nil {
+			return nil, err
+		}
+
+		output = append(output, SidecarSecret{
+			Store: secret.Store,
+			Key:   secret.Key,
+			Data:  data,
+		})
 	}
 
-	rsp, err := http.Post(fmt.Sprintf("%s/%s", stateURL, "test"), "application/json", bytes.NewBuffer(bs))
-	if err != nil {
-		return err
-	}
-
-	defer rsp.Body.Close()
-
-	return nil
+	return output, nil
 }
 
-func list() ([]SidecarState, error) {
-	log.Println("processing list request")
+func get(store, key string) (map[string]string, error) {
+	log.Printf("processing get request for store %s and key %s", store, key)
 
-	url := fmt.Sprintf("%s/%s", stateURL, "test")
+	url := fmt.Sprintf("%s/%s/%s", secretURL, store, key)
 
 	rsp, err := http.Get(url)
 	if err != nil {
@@ -132,37 +127,13 @@ func list() ([]SidecarState, error) {
 		return nil, err
 	}
 
-	var states []SidecarState
+	secret := SidecarSecret{}
 
-	if err := json.Unmarshal(body, &states); err != nil {
+	if err := json.Unmarshal(body, &secret); err != nil {
 		return nil, err
 	}
 
-	return states, nil
-}
-
-func delete(states []SidecarState) error {
-	log.Printf("processing delete request for %d entries", len(states))
-
-	for _, state := range states {
-		url := fmt.Sprintf("%s/%s/%s", stateURL, "test", state.Key)
-
-		req, err := http.NewRequest("DELETE", url, nil)
-		if err != nil {
-			return err
-		}
-
-		client := &http.Client{}
-
-		rsp, err := client.Do(req)
-		if err != nil {
-			return err
-		}
-
-		rsp.Body.Close()
-	}
-
-	return nil
+	return secret.Data, nil
 }
 
 func main() {
