@@ -26,6 +26,13 @@ import (
 )
 
 func run(ctx *cli.Context) {
+	// logger or tracer
+	logger := memory.NewLog(
+		log.LogWithPrefix(fmt.Sprintf("%s.%s:%s", config.Namespace, config.Name, config.Version)),
+	)
+
+	log.SetLogger(logger)
+
 	// get clients
 	httpClient := httpclient.NewClient()
 
@@ -115,16 +122,12 @@ func run(ctx *cli.Context) {
 		service.ReadEventsFromBroker(s)
 	}
 
-	// logger
-	logger := memory.NewLog(
-		log.LogWithPrefix(fmt.Sprintf("%s.%s:%s", config.Namespace, config.Name, config.Version)),
-	)
-
 	// base server opts
 	opts := []serverv2.ServerOption{
 		serverv2.ServerWithNamespace(config.Namespace),
 		serverv2.ServerWithName(config.Name),
 		serverv2.ServerWithVersion(config.Version),
+		serverv2.ServerWithLogger(logger),
 	}
 
 	// create http server
@@ -145,7 +148,6 @@ func run(ctx *cli.Context) {
 
 	httpOpts := []serverv2.ServerOption{
 		serverv2.ServerWithAddress(config.HttpAddress),
-		serverv2.ServerWithLogger(logger),
 	}
 
 	httpOpts = append(httpOpts, opts...)
@@ -157,7 +159,6 @@ func run(ctx *cli.Context) {
 	// create grpc server
 	grpcOpts := []serverv2.ServerOption{
 		serverv2.ServerWithAddress(config.GrpcAddress),
-		serverv2.ServerWithLogger(logger),
 	}
 
 	grpcOpts = append(grpcOpts, opts...)

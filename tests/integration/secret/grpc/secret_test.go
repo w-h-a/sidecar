@@ -3,7 +3,6 @@ package grpc
 import (
 	"context"
 	"fmt"
-	"log"
 	"os"
 	"testing"
 	"time"
@@ -17,6 +16,8 @@ import (
 	"github.com/w-h-a/pkg/runner"
 	"github.com/w-h-a/pkg/runner/binary"
 	"github.com/w-h-a/pkg/runner/http"
+	"github.com/w-h-a/pkg/telemetry/log"
+	"github.com/w-h-a/pkg/telemetry/log/memory"
 	"github.com/w-h-a/pkg/utils/errorutils"
 	"google.golang.org/grpc/status"
 )
@@ -31,6 +32,12 @@ func TestMain(m *testing.M) {
 	if len(os.Getenv("INTEGRATION")) == 0 {
 		os.Exit(0)
 	}
+
+	logger := memory.NewLog(
+		log.LogWithPrefix("integration test secret-grpc"),
+	)
+
+	log.SetLogger(logger)
 
 	var err error
 
@@ -82,6 +89,7 @@ func TestMain(m *testing.M) {
 	r := runner.NewTestRunner(
 		runner.RunnerWithId("state"),
 		runner.RunnerWithProcesses(serviceProcess, sidecarProcess),
+		runner.RunnerWithLogger(logger),
 	)
 
 	os.Exit(r.Start(m))
