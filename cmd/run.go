@@ -127,7 +127,6 @@ func run(ctx *cli.Context) {
 		serverv2.ServerWithNamespace(config.Namespace),
 		serverv2.ServerWithName(config.Name),
 		serverv2.ServerWithVersion(config.Version),
-		serverv2.ServerWithLogger(logger),
 	}
 
 	// create http server

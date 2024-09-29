@@ -89,7 +89,6 @@ func TestMain(m *testing.M) {
 	r := runner.NewTestRunner(
 		runner.RunnerWithId("pubsub"),
 		runner.RunnerWithProcesses(brokerProcess, serviceProcess),
-		runner.RunnerWithLogger(logger),
 	)
 
 	os.Exit(r.Start(m))

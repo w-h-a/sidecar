@@ -85,7 +85,6 @@ func TestMain(m *testing.M) {
 	r := runner.NewTestRunner(
 		runner.RunnerWithId("state"),
 		runner.RunnerWithProcesses(dbProcess, serviceProcess),
-		runner.RunnerWithLogger(logger),
 	)
 
 	os.Exit(r.Start(m))

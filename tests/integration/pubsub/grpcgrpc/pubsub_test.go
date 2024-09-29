@@ -91,7 +91,6 @@ func TestMain(m *testing.M) {
 			grpcSubscriber,
 			sidecarProcess,
 		),
-		runner.RunnerWithLogger(logger),
 	)
 
 	os.Exit(r.Start(m))

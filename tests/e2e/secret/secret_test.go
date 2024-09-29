@@ -83,7 +83,6 @@ func TestMain(m *testing.M) {
 	r := runner.NewTestRunner(
 		runner.RunnerWithId("secret"),
 		runner.RunnerWithProcesses(secretProcess, serviceProcess),
-		runner.RunnerWithLogger(logger),
 	)
 
 	os.Exit(r.Start(m))
