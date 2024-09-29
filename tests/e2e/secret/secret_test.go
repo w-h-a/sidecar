@@ -3,6 +3,7 @@ package secret
 import (
 	"encoding/json"
 	"fmt"
+	"log"
 	"os"
 	"reflect"
 	"testing"
@@ -11,7 +12,6 @@ import (
 	"github.com/stretchr/testify/require"
 	"github.com/w-h-a/pkg/runner"
 	"github.com/w-h-a/pkg/runner/docker"
-	"github.com/w-h-a/pkg/telemetry/log"
 	"github.com/w-h-a/pkg/utils/httputils"
 )
 

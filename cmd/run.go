@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"fmt"
 	"strings"
 	"sync"
 	"time"
@@ -18,6 +19,7 @@ import (
 	"github.com/w-h-a/pkg/sidecar/custom"
 	"github.com/w-h-a/pkg/store"
 	"github.com/w-h-a/pkg/telemetry/log"
+	"github.com/w-h-a/pkg/telemetry/log/memory"
 	"github.com/w-h-a/sidecar/cmd/config"
 	"github.com/w-h-a/sidecar/cmd/grpc"
 	"github.com/w-h-a/sidecar/cmd/http"
@@ -113,6 +115,11 @@ func run(ctx *cli.Context) {
 		service.ReadEventsFromBroker(s)
 	}
 
+	// logger
+	logger := memory.NewLog(
+		log.LogWithPrefix(fmt.Sprintf("%s.%s:%s", config.Namespace, config.Name, config.Version)),
+	)
+
 	// base server opts
 	opts := []serverv2.ServerOption{
 		serverv2.ServerWithNamespace(config.Namespace),
@@ -138,6 +145,7 @@ func run(ctx *cli.Context) {
 
 	httpOpts := []serverv2.ServerOption{
 		serverv2.ServerWithAddress(config.HttpAddress),
+		serverv2.ServerWithLogger(logger),
 	}
 
 	httpOpts = append(httpOpts, opts...)
@@ -149,6 +157,7 @@ func run(ctx *cli.Context) {
 	// create grpc server
 	grpcOpts := []serverv2.ServerOption{
 		serverv2.ServerWithAddress(config.GrpcAddress),
+		serverv2.ServerWithLogger(logger),
 	}
 
 	grpcOpts = append(grpcOpts, opts...)
