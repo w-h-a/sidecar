@@ -17,6 +17,7 @@ import (
 	"github.com/w-h-a/pkg/runner"
 	"github.com/w-h-a/pkg/runner/binary"
 	"github.com/w-h-a/pkg/telemetry/log"
+	"github.com/w-h-a/pkg/telemetry/log/memory"
 	"github.com/w-h-a/sidecar/tests/integration/pubsub/grpcgrpc/resources"
 	"google.golang.org/protobuf/types/known/anypb"
 )
@@ -33,6 +34,12 @@ func TestMain(m *testing.M) {
 	if len(os.Getenv("INTEGRATION")) == 0 {
 		os.Exit(0)
 	}
+
+	logger := memory.NewLog(
+		log.LogWithPrefix("integration test pubsub-grpc-grpc"),
+	)
+
+	log.SetLogger(logger)
 
 	var err error
 

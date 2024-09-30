@@ -13,6 +13,7 @@ import (
 	"github.com/w-h-a/pkg/runner"
 	"github.com/w-h-a/pkg/runner/docker"
 	"github.com/w-h-a/pkg/telemetry/log"
+	"github.com/w-h-a/pkg/telemetry/log/memory"
 	"github.com/w-h-a/pkg/utils/httputils"
 )
 
@@ -27,6 +28,12 @@ func TestMain(m *testing.M) {
 	if len(os.Getenv("E2E")) == 0 {
 		os.Exit(0)
 	}
+
+	logger := memory.NewLog(
+		log.LogWithPrefix("e2e test state"),
+	)
+
+	log.SetLogger(logger)
 
 	dir, err := os.Getwd()
 	if err != nil {
