@@ -4,9 +4,11 @@ import (
 	gohttp "net/http"
 
 	"github.com/gorilla/mux"
-	"github.com/w-h-a/pkg/serverv2/http"
 	"github.com/w-h-a/pkg/sidecar"
+	"github.com/w-h-a/pkg/telemetry/trace"
 	"github.com/w-h-a/pkg/utils/errorutils"
+	"github.com/w-h-a/pkg/utils/httputils"
+	"github.com/w-h-a/pkg/utils/metadatautils"
 )
 
 type SecretHandler interface {
@@ -24,16 +26,40 @@ func (h *secretHandler) HandleGet(w gohttp.ResponseWriter, r *gohttp.Request) {
 
 	key := params["key"]
 
-	secret, err := h.service.ReadFromSecretStore(secretId, key)
-	if err != nil && err == sidecar.ErrComponentNotFound {
-		http.ErrResponse(w, errorutils.NotFound("sidecar", "%s: %s", err.Error(), secretId))
-		return
-	} else if err != nil {
-		http.ErrResponse(w, errorutils.InternalServerError("sidecar", "failed to retrieve secret from store %s and key %s: %v", secretId, key, err))
+	ctx := metadatautils.RequestToContext(r)
+
+	tracer := trace.GetTracer()
+
+	_, span, err := tracer.Start(
+		ctx,
+		"secretHandler",
+		map[string]string{
+			secretId: secretId,
+			key:      key,
+		},
+	)
+	if err != nil {
+		httputils.ErrResponse(w, errorutils.InternalServerError("sidecar", "failed to generate span: %v", err))
 		return
 	}
 
-	http.OkResponse(w, secret)
+	// TODO: pass down context!
+	secret, err := h.service.ReadFromSecretStore(secretId, key)
+	if err != nil && err == sidecar.ErrComponentNotFound {
+		span.Metadata["error"] = err.Error()
+		tracer.Finish(span)
+		httputils.ErrResponse(w, errorutils.NotFound("sidecar", "%s: %s", err.Error(), secretId))
+		return
+	} else if err != nil {
+		span.Metadata["error"] = err.Error()
+		tracer.Finish(span)
+		httputils.ErrResponse(w, errorutils.InternalServerError("sidecar", "failed to retrieve secret from store %s and key %s: %v", secretId, key, err))
+		return
+	}
+
+	tracer.Finish(span)
+
+	httputils.OkResponse(w, secret)
 }
 
 func NewSecretHandler(s sidecar.Sidecar) SecretHandler {
