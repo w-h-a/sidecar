@@ -34,8 +34,8 @@ func (h *secretHandler) HandleGet(w gohttp.ResponseWriter, r *gohttp.Request) {
 		ctx,
 		"secretHandler",
 		map[string]string{
-			secretId: secretId,
-			key:      key,
+			"secretId": secretId,
+			"key":      key,
 		},
 	)
 	if err != nil {
