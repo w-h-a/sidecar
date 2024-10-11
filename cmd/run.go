@@ -134,18 +134,18 @@ func run(ctx *cli.Context) {
 		serverv2.ServerWithNamespace(config.Namespace),
 		serverv2.ServerWithName(config.Name),
 		serverv2.ServerWithVersion(config.Version),
-		serverv2.ServerWithTracer("memory"),
 	}
 
 	// create http server
 	router := mux.NewRouter()
 
-	httpHealth := http.NewHealthHandler()
+	httpHealth := http.NewHealthHandler(tracer)
 	httpPublish := http.NewPublishHandler(service)
 	httpState := http.NewStateHandler(service)
 	httpSecret := http.NewSecretHandler(service)
 
 	router.Methods("GET").Path("/health/check").HandlerFunc(httpHealth.Check)
+	router.Methods("GET").Path("/health/trace").HandlerFunc(httpHealth.Trace)
 	router.Methods("POST").Path("/publish").HandlerFunc(httpPublish.Handle)
 	router.Methods("POST").Path("/state/{storeId}").HandlerFunc(httpState.HandlePost)
 	router.Methods("GET").Path("/state/{storeId}").HandlerFunc(httpState.HandleList)
@@ -172,7 +172,7 @@ func run(ctx *cli.Context) {
 
 	grpcServer := grpcserver.NewServer(grpcOpts...)
 
-	grpcHealth := grpc.NewHealthHandler()
+	grpcHealth := grpc.NewHealthHandler(tracer)
 	grpcPublish := grpc.NewPublishHandler(service)
 	grpcState := grpc.NewStateHandler(service)
 	grpcSecret := grpc.NewSecretHandler(service)

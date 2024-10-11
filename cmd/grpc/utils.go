@@ -2,8 +2,10 @@ package grpc
 
 import (
 	pb "github.com/w-h-a/pkg/proto/sidecar"
+	pbTrace "github.com/w-h-a/pkg/proto/trace"
 	"github.com/w-h-a/pkg/sidecar"
 	"github.com/w-h-a/pkg/store"
+	"github.com/w-h-a/pkg/telemetry/trace"
 	"google.golang.org/protobuf/types/known/anypb"
 )
 
@@ -38,5 +40,17 @@ func SerializeRecords(recs []*store.Record) []*pb.KeyVal {
 func SerializeSecret(secret *sidecar.Secret) *pb.Secret {
 	return &pb.Secret{
 		Data: secret.Data,
+	}
+}
+
+func SerializeSpan(s *trace.Span) *pbTrace.Span {
+	return &pbTrace.Span{
+		Name:     s.Name,
+		Id:       s.Id,
+		Parent:   s.Parent,
+		Trace:    s.Trace,
+		Started:  uint64(s.Started.UnixNano()),
+		Duration: uint64(s.Duration.Nanoseconds()),
+		Metadata: s.Metadata,
 	}
 }
