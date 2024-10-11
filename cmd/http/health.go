@@ -26,17 +26,22 @@ func (h *healthHandler) Check(w http.ResponseWriter, r *http.Request) {
 func (h *healthHandler) Trace(w http.ResponseWriter, r *http.Request) {
 	id := r.URL.Query().Get("id")
 
-	count := r.URL.Query().Get("count")
+	c := r.URL.Query().Get("count")
 
-	c, err := strconv.Atoi(count)
-	if err != nil {
-		httputils.ErrResponse(w, errorutils.BadRequest("trace", "received bad count query param: %v", err))
-		return
+	var count int
+	var err error
+
+	if len(c) > 0 {
+		count, err = strconv.Atoi(c)
+		if err != nil {
+			httputils.ErrResponse(w, errorutils.BadRequest("trace", "received bad count query param: %v", err))
+			return
+		}
 	}
 
 	spans, err := h.tracer.Read(
 		trace.ReadWithTrace(id),
-		trace.ReadWithCount(c),
+		trace.ReadWithCount(count),
 	)
 	if err != nil {
 		httputils.ErrResponse(w, errorutils.InternalServerError("trace", "failed to retrieve traces: %v", err))
