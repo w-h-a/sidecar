@@ -79,8 +79,8 @@ github.com/stretchr/testify v1.9.0 h1:HtqpIVDClZ4nwg75+f6Lvsy/wHu+3BoSGCbBAcpTsT
 github.com/stretchr/testify v1.9.0/go.mod h1:r2ic/lqez/lEtzL7wO/rwa5dbSLXVDPFyf8C91i36aY=
 github.com/urfave/cli v1.22.15 h1:nuqt+pdC/KqswQKhETJjo7pvn/k4xMUxgW6liI7XpnM=
 github.com/urfave/cli v1.22.15/go.mod h1:wSan1hmo5zeyLGBjRJbzRTNk8gwoYa2B9n4q9dmRIc0=
-github.com/w-h-a/pkg v0.34.1-rc.1 h1:iETflMAR2yi7OWzJ1az7buHX/s9YC2qjDDfpifq75uo=
-github.com/w-h-a/pkg v0.34.1-rc.1/go.mod h1:TgEFgjxfHyjR6ZEE+aeamBbwjjWgwdDNyKb+NZNOWW8=
+github.com/w-h-a/pkg v0.34.1-rc.2 h1:G2A2B/Ua6bIVoAciC8Dgd7oR55Xt0BArYpRSKTeAje4=
+github.com/w-h-a/pkg v0.34.1-rc.2/go.mod h1:TgEFgjxfHyjR6ZEE+aeamBbwjjWgwdDNyKb+NZNOWW8=
 golang.org/x/net v0.28.0 h1:a9JDOJc5GMUJ0+UDqmLT86WiEy7iWyIhz8gz8E4e5hE=
 golang.org/x/net v0.28.0/go.mod h1:yqtgsTWOOnlGLG9GFRrK3++bGOUEkNBoHZc8MEDWPNg=
 golang.org/x/sys v0.24.0 h1:Twjiwq9dn6R1fQcyiK+wQyHWfaz/BJB+YIpzU/Cv3Xg=
