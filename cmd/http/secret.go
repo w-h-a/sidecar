@@ -30,12 +30,13 @@ func (h *secretHandler) HandleGet(w gohttp.ResponseWriter, r *gohttp.Request) {
 
 	tracer := trace.GetTracer()
 
-	_, span, err := tracer.Start(
+	newCtx, span, err := tracer.Start(
 		ctx,
 		"secretHandler",
 		map[string]string{
 			"secretId": secretId,
 			"key":      key,
+			"error":    "",
 		},
 	)
 	if err != nil {
@@ -43,9 +44,18 @@ func (h *secretHandler) HandleGet(w gohttp.ResponseWriter, r *gohttp.Request) {
 		return
 	}
 
-	// TODO: pass down context!
-	secret, err := h.service.ReadFromSecretStore(secretId, key)
-	if err != nil && err == sidecar.ErrComponentNotFound {
+	secret, err := h.service.ReadFromSecretStore(newCtx, secretId, key)
+	if err != nil && err == trace.ErrNotFound {
+		span.Metadata["error"] = err.Error()
+		tracer.Finish(span)
+		httputils.ErrResponse(w, errorutils.InternalServerError("sidecar", "tracer %s", err.Error()))
+		return
+	} else if err != nil && err == trace.ErrStart {
+		span.Metadata["error"] = err.Error()
+		tracer.Finish(span)
+		httputils.ErrResponse(w, errorutils.InternalServerError("sidecar", "%s", err.Error()))
+		return
+	} else if err != nil && err == sidecar.ErrComponentNotFound {
 		span.Metadata["error"] = err.Error()
 		tracer.Finish(span)
 		httputils.ErrResponse(w, errorutils.NotFound("sidecar", "%s: %s", err.Error(), secretId))

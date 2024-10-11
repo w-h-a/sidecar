@@ -21,7 +21,7 @@ type secretHandler struct {
 }
 
 func (h *secretHandler) Get(ctx context.Context, req *pb.GetSecretRequest, rsp *pb.GetSecretResponse) error {
-	secret, err := h.service.ReadFromSecretStore(req.SecretId, req.Key)
+	secret, err := h.service.ReadFromSecretStore(ctx, req.SecretId, req.Key)
 	if err != nil && err == sidecar.ErrComponentNotFound {
 		return errorutils.NotFound("sidecar", "%v: %s", err, req.SecretId)
 	} else if err != nil {
