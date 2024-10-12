@@ -45,12 +45,7 @@ func (h *secretHandler) HandleGet(w gohttp.ResponseWriter, r *gohttp.Request) {
 	}
 
 	secret, err := h.service.ReadFromSecretStore(newCtx, secretId, key)
-	if err != nil && err == trace.ErrNotFound {
-		span.Metadata["error"] = err.Error()
-		tracer.Finish(span)
-		httputils.ErrResponse(w, errorutils.InternalServerError("sidecar", "tracer %s", err.Error()))
-		return
-	} else if err != nil && err == trace.ErrStart {
+	if err != nil && err == trace.ErrStart {
 		span.Metadata["error"] = err.Error()
 		tracer.Finish(span)
 		httputils.ErrResponse(w, errorutils.InternalServerError("sidecar", "%s", err.Error()))
