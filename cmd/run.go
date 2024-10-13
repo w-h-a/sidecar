@@ -27,6 +27,7 @@ import (
 	"github.com/w-h-a/sidecar/cmd/grpc"
 	"github.com/w-h-a/sidecar/cmd/http"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/propagation"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 )
 
@@ -49,6 +50,7 @@ func run(ctx *cli.Context) {
 	)
 
 	otel.SetTracerProvider(tp)
+	otel.SetTextMapPropagator(propagation.TraceContext{})
 
 	tracer := memorytrace.NewTrace(
 		tracev2.TraceWithName("sidecar"),
