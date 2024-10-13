@@ -27,7 +27,9 @@ func (h *secretHandler) HandleGet(w gohttp.ResponseWriter, r *gohttp.Request) {
 
 	key := params["key"]
 
-	newCtx := h.tracer.Start(metadatautils.RequestToContext(r), "secretHandler")
+	ctx := metadatautils.RequestToContext(r)
+
+	newCtx := h.tracer.Start(ctx, "secretHandler")
 
 	h.tracer.AddMetadata(map[string]string{
 		"secretId": secretId,
