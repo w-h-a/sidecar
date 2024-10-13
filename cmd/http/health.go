@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/w-h-a/pkg/telemetry/trace"
+	"github.com/w-h-a/pkg/telemetry/tracev2"
 	"github.com/w-h-a/pkg/utils/errorutils"
 	"github.com/w-h-a/pkg/utils/httputils"
 )
@@ -15,7 +15,7 @@ type HealthHandler interface {
 }
 
 type healthHandler struct {
-	tracer trace.Trace
+	tracer tracev2.Trace
 }
 
 func (h *healthHandler) Check(w http.ResponseWriter, r *http.Request) {
@@ -24,8 +24,6 @@ func (h *healthHandler) Check(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *healthHandler) Trace(w http.ResponseWriter, r *http.Request) {
-	id := r.URL.Query().Get("id")
-
 	c := r.URL.Query().Get("count")
 
 	var count int
@@ -40,8 +38,7 @@ func (h *healthHandler) Trace(w http.ResponseWriter, r *http.Request) {
 	}
 
 	spans, err := h.tracer.Read(
-		trace.ReadWithTrace(id),
-		trace.ReadWithCount(count),
+		tracev2.ReadWithCount(count),
 	)
 	if err != nil {
 		httputils.ErrResponse(w, errorutils.InternalServerError("trace", "failed to retrieve traces: %v", err))
@@ -51,6 +48,6 @@ func (h *healthHandler) Trace(w http.ResponseWriter, r *http.Request) {
 	httputils.OkResponse(w, spans)
 }
 
-func NewHealthHandler(tracer trace.Trace) HealthHandler {
+func NewHealthHandler(tracer tracev2.Trace) HealthHandler {
 	return &healthHandler{tracer}
 }

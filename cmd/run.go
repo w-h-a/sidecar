@@ -18,13 +18,16 @@ import (
 	"github.com/w-h-a/pkg/sidecar"
 	"github.com/w-h-a/pkg/sidecar/custom"
 	"github.com/w-h-a/pkg/store"
+	"github.com/w-h-a/pkg/telemetry/buffer/memory"
 	"github.com/w-h-a/pkg/telemetry/log"
 	memorylog "github.com/w-h-a/pkg/telemetry/log/memory"
-	"github.com/w-h-a/pkg/telemetry/trace"
-	memorytrace "github.com/w-h-a/pkg/telemetry/trace/memory"
+	"github.com/w-h-a/pkg/telemetry/tracev2"
+	memorytrace "github.com/w-h-a/pkg/telemetry/tracev2/memory"
 	"github.com/w-h-a/sidecar/cmd/config"
 	"github.com/w-h-a/sidecar/cmd/grpc"
 	"github.com/w-h-a/sidecar/cmd/http"
+	"go.opentelemetry.io/otel"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 )
 
 func run(ctx *cli.Context) {
@@ -35,10 +38,21 @@ func run(ctx *cli.Context) {
 
 	log.SetLogger(logger)
 
-	// tracer
-	tracer := memorytrace.NewTrace()
+	// otel tracer
+	buffer := memory.NewBuffer()
 
-	trace.SetTracer(tracer)
+	exporter := memorytrace.NewExporter(buffer)
+
+	tp := sdktrace.NewTracerProvider(
+		sdktrace.WithBatcher(exporter),
+	)
+
+	otel.SetTracerProvider(tp)
+
+	tracer := memorytrace.NewTrace(
+		tracev2.TraceWithName("sidecar"),
+		memorytrace.TraceWithBuffer(buffer),
+	)
 
 	// get clients
 	httpClient := httpclient.NewClient()
@@ -110,6 +124,7 @@ func run(ctx *cli.Context) {
 		sidecar.SidecarWithStores(stores),
 		sidecar.SidecarWithBrokers(brokers),
 		sidecar.SidecarWithSecrets(secrets),
+		sidecar.SidecarWithTracer(tracer),
 	}
 
 	if config.ServiceProtocol == "grpc" {
@@ -142,7 +157,7 @@ func run(ctx *cli.Context) {
 	httpHealth := http.NewHealthHandler(tracer)
 	httpPublish := http.NewPublishHandler(service)
 	httpState := http.NewStateHandler(service)
-	httpSecret := http.NewSecretHandler(service)
+	httpSecret := http.NewSecretHandler(service, tracer)
 
 	router.Methods("GET").Path("/health/check").HandlerFunc(httpHealth.Check)
 	router.Methods("GET").Path("/health/trace").HandlerFunc(httpHealth.Trace)

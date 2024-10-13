@@ -5,7 +5,7 @@ import (
 
 	pbHealth "github.com/w-h-a/pkg/proto/health"
 	pbTrace "github.com/w-h-a/pkg/proto/trace"
-	"github.com/w-h-a/pkg/telemetry/trace"
+	"github.com/w-h-a/pkg/telemetry/tracev2"
 	"github.com/w-h-a/pkg/utils/errorutils"
 )
 
@@ -19,7 +19,7 @@ type Health struct {
 }
 
 type healthHandler struct {
-	tracer trace.Trace
+	tracer tracev2.Trace
 }
 
 func (h *healthHandler) Check(ctx context.Context, req *pbHealth.HealthRequest, rsp *pbHealth.HealthResponse) error {
@@ -29,8 +29,7 @@ func (h *healthHandler) Check(ctx context.Context, req *pbHealth.HealthRequest, 
 
 func (h *healthHandler) Trace(ctx context.Context, req *pbTrace.TraceRequest, rsp *pbTrace.TraceResponse) error {
 	spans, err := h.tracer.Read(
-		trace.ReadWithTrace(req.Id),
-		trace.ReadWithCount(int(req.Count)),
+		tracev2.ReadWithCount(int(req.Count)),
 	)
 	if err != nil {
 		return errorutils.InternalServerError("trace", "failed to retrieve traces: %v", err)
@@ -43,6 +42,6 @@ func (h *healthHandler) Trace(ctx context.Context, req *pbTrace.TraceRequest, rs
 	return nil
 }
 
-func NewHealthHandler(t trace.Trace) HealthHandler {
+func NewHealthHandler(t tracev2.Trace) HealthHandler {
 	return &Health{&healthHandler{t}}
 }
