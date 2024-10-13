@@ -27,44 +27,29 @@ func (h *secretHandler) HandleGet(w gohttp.ResponseWriter, r *gohttp.Request) {
 
 	key := params["key"]
 
-	ctx, span, err := h.tracer.Start(metadatautils.RequestToContext(r), "secretHandler")
-	if err != nil {
-		httputils.ErrResponse(w, errorutils.InternalServerError("sidecar", "failed to generate span: %v", err))
-		return
-	}
+	newCtx := h.tracer.Start(metadatautils.RequestToContext(r), "secretHandler")
 
-	h.tracer.AddMetadata(span, map[string]string{
+	h.tracer.AddMetadata(map[string]string{
 		"secretId": secretId,
 		"key":      key,
 	})
 
-	newCtx, err := tracev2.ContextWithSpanData(ctx, span.SpanData())
-	if err != nil {
-		httputils.ErrResponse(w, errorutils.InternalServerError("sidecar", "failed to pass span: %v", err))
-		return
-	}
-
 	secret, err := h.service.ReadFromSecretStore(newCtx, secretId, key)
-	if err != nil && err == tracev2.ErrStart {
+	if err != nil && err == sidecar.ErrComponentNotFound {
 		// TODO: update span status
-		h.tracer.Finish(span)
-		httputils.ErrResponse(w, errorutils.InternalServerError("sidecar", "%s", err.Error()))
-		return
-	} else if err != nil && err == sidecar.ErrComponentNotFound {
-		// TODO: update span status
-		h.tracer.Finish(span)
+		h.tracer.Finish()
 		httputils.ErrResponse(w, errorutils.NotFound("sidecar", "%s: %s", err.Error(), secretId))
 		return
 	} else if err != nil {
 		// TODO: update span status
-		h.tracer.Finish(span)
+		h.tracer.Finish()
 		httputils.ErrResponse(w, errorutils.InternalServerError("sidecar", "failed to retrieve secret from store %s and key %s: %v", secretId, key, err))
 		return
 	}
 
 	// TODO: update span status
 
-	h.tracer.Finish(span)
+	h.tracer.Finish()
 
 	httputils.OkResponse(w, secret)
 }
