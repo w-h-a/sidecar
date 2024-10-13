@@ -18,11 +18,11 @@ import (
 	"github.com/w-h-a/pkg/sidecar"
 	"github.com/w-h-a/pkg/sidecar/custom"
 	"github.com/w-h-a/pkg/store"
-	"github.com/w-h-a/pkg/telemetry/buffer/memory"
 	"github.com/w-h-a/pkg/telemetry/log"
 	memorylog "github.com/w-h-a/pkg/telemetry/log/memory"
 	"github.com/w-h-a/pkg/telemetry/tracev2"
 	memorytrace "github.com/w-h-a/pkg/telemetry/tracev2/memory"
+	"github.com/w-h-a/pkg/utils/memoryutils"
 	"github.com/w-h-a/sidecar/cmd/config"
 	"github.com/w-h-a/sidecar/cmd/grpc"
 	"github.com/w-h-a/sidecar/cmd/http"
@@ -39,7 +39,7 @@ func run(ctx *cli.Context) {
 	log.SetLogger(logger)
 
 	// otel tracer
-	buffer := memory.NewBuffer()
+	buffer := memoryutils.NewBuffer(1024)
 
 	exporter := memorytrace.NewExporter(buffer)
 
