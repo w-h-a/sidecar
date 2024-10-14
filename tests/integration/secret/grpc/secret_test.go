@@ -19,6 +19,7 @@ import (
 	"github.com/w-h-a/pkg/telemetry/log"
 	"github.com/w-h-a/pkg/telemetry/log/memory"
 	"github.com/w-h-a/pkg/utils/errorutils"
+	"github.com/w-h-a/pkg/utils/memoryutils"
 	"google.golang.org/grpc/status"
 )
 
@@ -35,6 +36,7 @@ func TestMain(m *testing.M) {
 
 	logger := memory.NewLog(
 		log.LogWithPrefix("integration test secret-grpc"),
+		memory.LogWithBuffer(memoryutils.NewBuffer()),
 	)
 
 	log.SetLogger(logger)

@@ -84,8 +84,8 @@ github.com/stretchr/testify v1.9.0 h1:HtqpIVDClZ4nwg75+f6Lvsy/wHu+3BoSGCbBAcpTsT
 github.com/stretchr/testify v1.9.0/go.mod h1:r2ic/lqez/lEtzL7wO/rwa5dbSLXVDPFyf8C91i36aY=
 github.com/urfave/cli v1.22.15 h1:nuqt+pdC/KqswQKhETJjo7pvn/k4xMUxgW6liI7XpnM=
 github.com/urfave/cli v1.22.15/go.mod h1:wSan1hmo5zeyLGBjRJbzRTNk8gwoYa2B9n4q9dmRIc0=
-github.com/w-h-a/pkg v0.34.1-rc.20 h1:IRGREt62jGdizjkf2mC7maDOmN5eP47zc2RJaLJT8Wo=
-github.com/w-h-a/pkg v0.34.1-rc.20/go.mod h1:B00oIoJw4uW57x48f6OT/+H1IsgZ1RKQW32YOtjSC10=
+github.com/w-h-a/pkg v0.34.1-rc.21 h1:27Z9e2OFzelBEvASlq4JlUip17y91TaTRydIN2y9gu8=
+github.com/w-h-a/pkg v0.34.1-rc.21/go.mod h1:B00oIoJw4uW57x48f6OT/+H1IsgZ1RKQW32YOtjSC10=
 go.opentelemetry.io/otel v1.31.0 h1:NsJcKPIW0D0H3NgzPDHmo0WW6SptzPdqg/L1zsIm2hY=
 go.opentelemetry.io/otel v1.31.0/go.mod h1:O0C14Yl9FgkjqcCZAsE053C13OaddMYr/hz6clDkEJE=
 go.opentelemetry.io/otel/metric v1.31.0 h1:FSErL0ATQAmYHUIzSezZibnyVlft1ybhy4ozRPcF2fE=

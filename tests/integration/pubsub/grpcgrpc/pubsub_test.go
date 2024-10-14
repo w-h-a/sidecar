@@ -18,6 +18,7 @@ import (
 	"github.com/w-h-a/pkg/runner/binary"
 	"github.com/w-h-a/pkg/telemetry/log"
 	"github.com/w-h-a/pkg/telemetry/log/memory"
+	"github.com/w-h-a/pkg/utils/memoryutils"
 	"github.com/w-h-a/sidecar/tests/integration/pubsub/grpcgrpc/resources"
 	"google.golang.org/protobuf/types/known/anypb"
 )
@@ -37,6 +38,7 @@ func TestMain(m *testing.M) {
 
 	logger := memory.NewLog(
 		log.LogWithPrefix("integration test pubsub-grpc-grpc"),
+		memory.LogWithBuffer(memoryutils.NewBuffer()),
 	)
 
 	log.SetLogger(logger)

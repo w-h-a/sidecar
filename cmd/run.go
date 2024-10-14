@@ -32,9 +32,12 @@ import (
 )
 
 func run(ctx *cli.Context) {
+	prefix := fmt.Sprintf("%s.%s:%s", config.Namespace, config.Name, config.Version)
+
 	// logger
 	logger := memorylog.NewLog(
-		log.LogWithPrefix(fmt.Sprintf("%s.%s:%s", config.Namespace, config.Name, config.Version)),
+		log.LogWithPrefix(prefix),
+		memorylog.LogWithBuffer(memoryutils.NewBuffer()),
 	)
 
 	log.SetLogger(logger)
@@ -53,7 +56,7 @@ func run(ctx *cli.Context) {
 	otel.SetTextMapPropagator(propagation.TraceContext{})
 
 	tracer := memorytrace.NewTrace(
-		tracev2.TraceWithName("sidecar"),
+		tracev2.TraceWithName(prefix),
 		memorytrace.TraceWithBuffer(buffer),
 	)
 
