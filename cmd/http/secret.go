@@ -30,7 +30,8 @@ func (h *secretHandler) HandleGet(w gohttp.ResponseWriter, r *gohttp.Request) {
 
 	ctx := metadatautils.RequestToContext(r)
 
-	newCtx, spanId := h.tracer.Start(ctx, "secretHandler")
+	newCtx, spanId := h.tracer.Start(ctx, "http.SecretHandler")
+	defer h.tracer.Finish(spanId)
 
 	h.tracer.AddMetadata(spanId, map[string]string{
 		"secretId": secretId,
@@ -39,20 +40,16 @@ func (h *secretHandler) HandleGet(w gohttp.ResponseWriter, r *gohttp.Request) {
 
 	secret, err := h.service.ReadFromSecretStore(newCtx, secretId, key)
 	if err != nil && err == sidecar.ErrComponentNotFound {
-		h.tracer.UpdateStatus(spanId, 404, fmt.Sprintf("%s: %s", err.Error(), secretId))
-		h.tracer.Finish(spanId)
+		h.tracer.UpdateStatus(spanId, 1, fmt.Sprintf("%s: %s", err.Error(), secretId))
 		httputils.ErrResponse(w, errorutils.NotFound("sidecar", "%s: %s", err.Error(), secretId))
 		return
 	} else if err != nil {
-		h.tracer.UpdateStatus(spanId, 500, fmt.Sprintf("failed to retrieve secret from store %s and key %s: %v", secretId, key, err))
-		h.tracer.Finish(spanId)
+		h.tracer.UpdateStatus(spanId, 1, fmt.Sprintf("failed to retrieve secret from store %s and key %s: %v", secretId, key, err))
 		httputils.ErrResponse(w, errorutils.InternalServerError("sidecar", "failed to retrieve secret from store %s and key %s: %v", secretId, key, err))
 		return
 	}
 
-	h.tracer.UpdateStatus(spanId, 200, "successfully retrieved secret")
-
-	h.tracer.Finish(spanId)
+	h.tracer.UpdateStatus(spanId, 2, "success")
 
 	httputils.OkResponse(w, secret)
 }

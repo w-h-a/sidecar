@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"sync"
@@ -147,7 +148,7 @@ func run(ctx *cli.Context) {
 			continue
 		}
 
-		service.ReadEventsFromBroker(s)
+		service.ReadEventsFromBroker(context.Background(), s)
 	}
 
 	// base server opts
@@ -161,8 +162,8 @@ func run(ctx *cli.Context) {
 	router := mux.NewRouter()
 
 	httpHealth := http.NewHealthHandler(tracer)
-	httpPublish := http.NewPublishHandler(service)
-	httpState := http.NewStateHandler(service)
+	httpPublish := http.NewPublishHandler(service, tracer)
+	httpState := http.NewStateHandler(service, tracer)
 	httpSecret := http.NewSecretHandler(service, tracer)
 
 	router.Methods("GET").Path("/health/check").HandlerFunc(httpHealth.Check)
@@ -194,9 +195,9 @@ func run(ctx *cli.Context) {
 	grpcServer := grpcserver.NewServer(grpcOpts...)
 
 	grpcHealth := grpc.NewHealthHandler(tracer)
-	grpcPublish := grpc.NewPublishHandler(service)
-	grpcState := grpc.NewStateHandler(service)
-	grpcSecret := grpc.NewSecretHandler(service)
+	grpcPublish := grpc.NewPublishHandler(service, tracer)
+	grpcState := grpc.NewStateHandler(service, tracer)
+	grpcSecret := grpc.NewSecretHandler(service, tracer)
 
 	grpcServer.Handle(grpcserver.NewHandler(grpcHealth))
 	grpcServer.Handle(grpcserver.NewHandler(grpcPublish))
@@ -229,7 +230,7 @@ func run(ctx *cli.Context) {
 
 	// unsubscribe by group
 	for _, s := range config.Consumers {
-		if err := service.UnsubscribeFromBroker(s); err != nil {
+		if err := service.UnsubscribeFromBroker(context.Background(), s); err != nil {
 			log.Errorf("failed to unsubscribe from broker %s: %v", s, err)
 		}
 	}
