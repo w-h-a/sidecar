@@ -40,7 +40,7 @@ func run(ctx *cli.Context) {
 	log.SetLogger(logger)
 
 	// otel tracer
-	buffer := memoryutils.NewBuffer(1024)
+	buffer := memoryutils.NewBuffer()
 
 	exporter := memorytrace.NewExporter(buffer)
 
