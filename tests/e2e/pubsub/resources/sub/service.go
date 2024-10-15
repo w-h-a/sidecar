@@ -10,6 +10,7 @@ import (
 	"sync"
 
 	"github.com/gorilla/mux"
+	"github.com/w-h-a/pkg/sidecar"
 )
 
 const (
@@ -114,17 +115,21 @@ func extractMessage(body []byte) (map[string]interface{}, error) {
 
 	log.Printf("body: %s", string(body))
 
-	m := map[string]interface{}{}
+	payload := sidecar.Payload{}
 
-	if err := json.Unmarshal(body, &m); err != nil {
+	if err := json.Unmarshal(body, &payload); err != nil {
 		return nil, err
 	}
 
-	msg := m["data"].(map[string]interface{})
+	m := map[string]interface{}{}
 
-	log.Printf("output: '%+v'\n", msg)
+	if err := json.Unmarshal(payload.Data, &m); err != nil {
+		return nil, err
+	}
 
-	return msg, nil
+	log.Printf("output: '%+v'\n", m)
+
+	return m, nil
 }
 
 func main() {

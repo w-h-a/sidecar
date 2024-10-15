@@ -58,9 +58,14 @@ func testHandler(w http.ResponseWriter, r *http.Request) {
 
 	rsp := ServiceResponse{}
 
+	bs, _ := json.Marshal(commandBody.Data)
+
 	event := sidecar.Event{
 		EventName: commandBody.Topic,
-		Data:      commandBody.Data,
+		Payload: sidecar.Payload{
+			Metadata: map[string]string{},
+			Data:     bs,
+		},
 	}
 
 	rsp.StartTime = int(time.Now().UnixMilli())

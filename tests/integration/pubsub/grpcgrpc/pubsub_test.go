@@ -20,7 +20,6 @@ import (
 	"github.com/w-h-a/pkg/telemetry/log/memory"
 	"github.com/w-h-a/pkg/utils/memoryutils"
 	"github.com/w-h-a/sidecar/tests/integration/pubsub/grpcgrpc/resources"
-	"google.golang.org/protobuf/types/known/anypb"
 )
 
 var (
@@ -152,8 +151,9 @@ func TestPubSubGrpcToGrpc(t *testing.T) {
 			&sidecar.PublishRequest{
 				Event: &sidecar.Event{
 					EventName: "go-c",
-					Data: &anypb.Any{
-						Value: []byte(`{"status": "completed"}`),
+					Payload: &sidecar.Payload{
+						Metadata: map[string]string{},
+						Data:     []byte(`{"status": "completed"}`),
 					},
 				},
 			},
@@ -179,8 +179,9 @@ func TestPubSubGrpcToGrpc(t *testing.T) {
 					&sidecar.PublishRequest{
 						Event: &sidecar.Event{
 							EventName: brokerName,
-							Data: &anypb.Any{
-								Value: []byte(fmt.Sprintf(`{"topic": "%s"}`, brokerName)),
+							Payload: &sidecar.Payload{
+								Metadata: map[string]string{},
+								Data:     []byte(fmt.Sprintf(`{"topic": "%s"}`, brokerName)),
 							},
 						},
 					},
@@ -196,8 +197,8 @@ func TestPubSubGrpcToGrpc(t *testing.T) {
 
 			data := map[string]string{}
 
-			err := json.Unmarshal(event.Event.Data.Value, &data)
-			require.NoError(t, err)
+			err = json.Unmarshal(event.Event.Payload.Data, &data)
+			require.NoError(c, err)
 
 			str := data["topic"]
 

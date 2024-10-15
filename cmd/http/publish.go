@@ -45,11 +45,11 @@ func (h *publishHandler) Handle(w gohttp.ResponseWriter, r *gohttp.Request) {
 		return
 	}
 
-	data, _ := json.Marshal(event.Data)
+	payload, _ := json.Marshal(event.Payload)
 
 	h.tracer.AddMetadata(spanId, map[string]string{
 		"eventName": event.EventName,
-		"data":      string(data),
+		"payload":   string(payload),
 	})
 
 	if len(event.EventName) == 0 {

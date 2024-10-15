@@ -2,6 +2,7 @@ package grpc
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 
 	pb "github.com/w-h-a/pkg/proto/sidecar"
@@ -32,9 +33,11 @@ func (h *publishHandler) Publish(ctx context.Context, req *pb.PublishRequest, rs
 		return errorutils.BadRequest("sidecar", "event is required")
 	}
 
+	payload, _ := json.Marshal(req.Event.Payload)
+
 	h.tracer.AddMetadata(spanId, map[string]string{
 		"eventName": req.Event.EventName,
-		"data":      string(req.Event.Data.Value),
+		"payload":   string(payload),
 	})
 
 	if len(req.Event.EventName) == 0 {
@@ -44,7 +47,10 @@ func (h *publishHandler) Publish(ctx context.Context, req *pb.PublishRequest, rs
 
 	event := &sidecar.Event{
 		EventName: req.Event.EventName,
-		Data:      req.Event.Data.Value,
+		Payload: sidecar.Payload{
+			Metadata: req.Event.Payload.Metadata,
+			Data:     req.Event.Payload.Data,
+		},
 	}
 
 	if err := h.service.WriteEventToBroker(newCtx, event); err != nil && err == sidecar.ErrComponentNotFound {
