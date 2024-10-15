@@ -2,7 +2,6 @@ package grpcgrpc
 
 import (
 	"context"
-	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -21,7 +20,6 @@ import (
 	"github.com/w-h-a/pkg/telemetry/log/memory"
 	"github.com/w-h-a/pkg/utils/memoryutils"
 	"github.com/w-h-a/sidecar/tests/integration/pubsub/grpcgrpc/resources"
-	"google.golang.org/protobuf/types/known/anypb"
 )
 
 var (
@@ -153,12 +151,7 @@ func TestPubSubGrpcToGrpc(t *testing.T) {
 			&sidecar.PublishRequest{
 				Event: &sidecar.Event{
 					EventName: "go-c",
-					Payload: &sidecar.Payload{
-						Metadata: map[string]string{},
-						Data: &anypb.Any{
-							Value: []byte(`{"status": "completed"}`),
-						},
-					},
+					Payload:   []byte(`{"status": "completed"}`),
 				},
 			},
 		),
@@ -183,12 +176,7 @@ func TestPubSubGrpcToGrpc(t *testing.T) {
 					&sidecar.PublishRequest{
 						Event: &sidecar.Event{
 							EventName: brokerName,
-							Payload: &sidecar.Payload{
-								Metadata: map[string]string{},
-								Data: &anypb.Any{
-									Value: []byte(fmt.Sprintf(`{"topic": "%s"}`, brokerName)),
-								},
-							},
+							Payload:   []byte(fmt.Sprintf(`{"topic": "%s"}`, brokerName)),
 						},
 					},
 				),
@@ -201,20 +189,9 @@ func TestPubSubGrpcToGrpc(t *testing.T) {
 
 			event := grpcSubscriber.Receive()
 
-			proto := map[string]string{}
+			data := map[string]interface{}{}
 
-			err = json.Unmarshal(event.Event.Payload.Data.Value, &proto)
-			require.NoError(c, err)
-
-			encoded := proto["value"]
-
-			decoded, err := base64.StdEncoding.DecodeString(encoded)
-			require.NoError(c, err)
-
-			data := map[string]string{}
-
-			err = json.Unmarshal(decoded, &data)
-			require.NoError(c, err)
+			_ = json.Unmarshal(event.Event.Payload, &data)
 
 			require.True(c, data["topic"] == event.Method)
 

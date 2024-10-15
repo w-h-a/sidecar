@@ -33,11 +33,9 @@ func (h *publishHandler) Publish(ctx context.Context, req *pb.PublishRequest, rs
 		return errorutils.BadRequest("sidecar", "event is required")
 	}
 
-	payload, _ := json.Marshal(req.Event.Payload)
-
 	h.tracer.AddMetadata(spanId, map[string]string{
 		"eventName": req.Event.EventName,
-		"payload":   string(payload),
+		"payload":   string(req.Event.Payload),
 	})
 
 	if len(req.Event.EventName) == 0 {
@@ -45,12 +43,17 @@ func (h *publishHandler) Publish(ctx context.Context, req *pb.PublishRequest, rs
 		return errorutils.BadRequest("sidecar", "an event name as topic is required")
 	}
 
+	payload := map[string]interface{}{}
+
+	err := json.Unmarshal(req.Event.Payload, &payload)
+	if err != nil {
+		h.tracer.UpdateStatus(spanId, 1, fmt.Sprintf("failed to unmarshal event payload: %v", err))
+		return errorutils.BadRequest("sidecar", "the payload could not be marshaled into map[string]interface{}")
+	}
+
 	event := &sidecar.Event{
 		EventName: req.Event.EventName,
-		Payload: sidecar.Payload{
-			Metadata: req.Event.Payload.Metadata,
-			Data:     req.Event.Payload.Data,
-		},
+		Payload:   payload,
 	}
 
 	if err := h.service.WriteEventToBroker(newCtx, event); err != nil && err == sidecar.ErrComponentNotFound {
