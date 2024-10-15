@@ -58,13 +58,11 @@ func testHandler(w http.ResponseWriter, r *http.Request) {
 
 	rsp := ServiceResponse{}
 
-	bs, _ := json.Marshal(commandBody.Data)
-
 	event := sidecar.Event{
 		EventName: commandBody.Topic,
 		Payload: sidecar.Payload{
 			Metadata: map[string]string{},
-			Data:     bs,
+			Data:     commandBody.Data,
 		},
 	}
 

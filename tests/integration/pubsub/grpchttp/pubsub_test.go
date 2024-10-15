@@ -2,6 +2,7 @@ package grpchttp
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"os"
@@ -22,6 +23,7 @@ import (
 	"github.com/w-h-a/pkg/utils/httputils"
 	"github.com/w-h-a/pkg/utils/memoryutils"
 	"github.com/w-h-a/sidecar/tests/integration/pubsub/grpchttp/resources"
+	"google.golang.org/protobuf/types/known/anypb"
 )
 
 var (
@@ -145,7 +147,9 @@ func TestPubSubGrpctoHttp(t *testing.T) {
 					EventName: "go-c",
 					Payload: &sidecar.Payload{
 						Metadata: map[string]string{},
-						Data:     []byte(`{"status": "completed"}`),
+						Data: &anypb.Any{
+							Value: []byte(`{"status": "completed"}`),
+						},
 					},
 				},
 			},
@@ -173,7 +177,9 @@ func TestPubSubGrpctoHttp(t *testing.T) {
 							EventName: brokerName,
 							Payload: &sidecar.Payload{
 								Metadata: map[string]string{},
-								Data:     []byte(fmt.Sprintf(`{"topic": "%s"}`, brokerName)),
+								Data: &anypb.Any{
+									Value: []byte(fmt.Sprintf(`{"topic": "%s"}`, brokerName)),
+								},
 							},
 						},
 					},
@@ -187,15 +193,20 @@ func TestPubSubGrpctoHttp(t *testing.T) {
 
 			event := httpSubscriber.Receive()
 
-			data := map[string]string{}
+			proto := event.Event.Payload.Data.(map[string]interface{})
 
-			err = json.Unmarshal(event.Event.Payload.Data, &data)
-			require.NoError(c, err)
-
-			str, ok := data["topic"]
+			encoded, ok := proto["value"].(string)
 			require.True(c, ok)
 
-			rpl := strings.Replace(str, "-", "/", -1)
+			decoded, err := base64.StdEncoding.DecodeString(encoded)
+			require.NoError(c, err)
+
+			data := map[string]string{}
+
+			err = json.Unmarshal(decoded, &data)
+			require.NoError(c, err)
+
+			rpl := strings.Replace(data["topic"], "-", "/", -1)
 
 			require.True(c, fmt.Sprintf("/%s", rpl) == event.Route)
 

@@ -121,11 +121,7 @@ func extractMessage(body []byte) (map[string]interface{}, error) {
 		return nil, err
 	}
 
-	m := map[string]interface{}{}
-
-	if err := json.Unmarshal(payload.Data, &m); err != nil {
-		return nil, err
-	}
+	m := payload.Data.(map[string]interface{})
 
 	log.Printf("output: '%+v'\n", m)
 
