@@ -18,6 +18,7 @@ import (
 	"github.com/w-h-a/pkg/runner/http"
 	"github.com/w-h-a/pkg/telemetry/log"
 	"github.com/w-h-a/pkg/telemetry/log/memory"
+	"github.com/w-h-a/pkg/utils/memoryutils"
 	"google.golang.org/protobuf/types/known/anypb"
 )
 
@@ -34,6 +35,7 @@ func TestMain(m *testing.M) {
 
 	logger := memory.NewLog(
 		log.LogWithPrefix("integration test state-grpc"),
+		memory.LogWithBuffer(memoryutils.NewBuffer()),
 	)
 
 	log.SetLogger(logger)

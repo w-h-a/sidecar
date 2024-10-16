@@ -60,7 +60,7 @@ func testHandler(w http.ResponseWriter, r *http.Request) {
 
 	event := sidecar.Event{
 		EventName: commandBody.Topic,
-		Data:      commandBody.Data,
+		Payload:   commandBody.Data,
 	}
 
 	rsp.StartTime = int(time.Now().UnixMilli())

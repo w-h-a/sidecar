@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"fmt"
 	"strings"
 	"sync"
@@ -19,19 +20,46 @@ import (
 	"github.com/w-h-a/pkg/sidecar/custom"
 	"github.com/w-h-a/pkg/store"
 	"github.com/w-h-a/pkg/telemetry/log"
-	"github.com/w-h-a/pkg/telemetry/log/memory"
+	memorylog "github.com/w-h-a/pkg/telemetry/log/memory"
+	"github.com/w-h-a/pkg/telemetry/tracev2"
+	memorytrace "github.com/w-h-a/pkg/telemetry/tracev2/memory"
+	"github.com/w-h-a/pkg/utils/memoryutils"
 	"github.com/w-h-a/sidecar/cmd/config"
 	"github.com/w-h-a/sidecar/cmd/grpc"
 	"github.com/w-h-a/sidecar/cmd/http"
+	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/propagation"
+	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 )
 
 func run(ctx *cli.Context) {
-	// logger or tracer
-	logger := memory.NewLog(
-		log.LogWithPrefix(fmt.Sprintf("%s.%s:%s", config.Namespace, config.Name, config.Version)),
+	prefix := fmt.Sprintf("%s.%s:%s", config.Namespace, config.Name, config.Version)
+
+	// logger
+	logger := memorylog.NewLog(
+		log.LogWithPrefix(prefix),
+		memorylog.LogWithBuffer(memoryutils.NewBuffer()),
 	)
 
 	log.SetLogger(logger)
+
+	// otel tracer
+	buffer := memoryutils.NewBuffer()
+
+	exporter := memorytrace.NewExporter(buffer)
+
+	tp := sdktrace.NewTracerProvider(
+		sdktrace.WithBatcher(exporter),
+		sdktrace.WithSampler(sdktrace.AlwaysSample()),
+	)
+
+	otel.SetTracerProvider(tp)
+	otel.SetTextMapPropagator(propagation.TraceContext{})
+
+	tracer := memorytrace.NewTrace(
+		tracev2.TraceWithName(prefix),
+		memorytrace.TraceWithBuffer(buffer),
+	)
 
 	// get clients
 	httpClient := httpclient.NewClient()
@@ -103,6 +131,7 @@ func run(ctx *cli.Context) {
 		sidecar.SidecarWithStores(stores),
 		sidecar.SidecarWithBrokers(brokers),
 		sidecar.SidecarWithSecrets(secrets),
+		sidecar.SidecarWithTracer(tracer),
 	}
 
 	if config.ServiceProtocol == "grpc" {
@@ -119,7 +148,7 @@ func run(ctx *cli.Context) {
 			continue
 		}
 
-		service.ReadEventsFromBroker(s)
+		service.ReadEventsFromBroker(context.Background(), s)
 	}
 
 	// base server opts
@@ -132,12 +161,13 @@ func run(ctx *cli.Context) {
 	// create http server
 	router := mux.NewRouter()
 
-	httpHealth := http.NewHealthHandler()
-	httpPublish := http.NewPublishHandler(service)
-	httpState := http.NewStateHandler(service)
-	httpSecret := http.NewSecretHandler(service)
+	httpHealth := http.NewHealthHandler(tracer)
+	httpPublish := http.NewPublishHandler(service, tracer)
+	httpState := http.NewStateHandler(service, tracer)
+	httpSecret := http.NewSecretHandler(service, tracer)
 
 	router.Methods("GET").Path("/health/check").HandlerFunc(httpHealth.Check)
+	router.Methods("GET").Path("/health/trace").HandlerFunc(httpHealth.Trace)
 	router.Methods("POST").Path("/publish").HandlerFunc(httpPublish.Handle)
 	router.Methods("POST").Path("/state/{storeId}").HandlerFunc(httpState.HandlePost)
 	router.Methods("GET").Path("/state/{storeId}").HandlerFunc(httpState.HandleList)
@@ -164,10 +194,10 @@ func run(ctx *cli.Context) {
 
 	grpcServer := grpcserver.NewServer(grpcOpts...)
 
-	grpcHealth := grpc.NewHealthHandler()
-	grpcPublish := grpc.NewPublishHandler(service)
-	grpcState := grpc.NewStateHandler(service)
-	grpcSecret := grpc.NewSecretHandler(service)
+	grpcHealth := grpc.NewHealthHandler(tracer)
+	grpcPublish := grpc.NewPublishHandler(service, tracer)
+	grpcState := grpc.NewStateHandler(service, tracer)
+	grpcSecret := grpc.NewSecretHandler(service, tracer)
 
 	grpcServer.Handle(grpcserver.NewHandler(grpcHealth))
 	grpcServer.Handle(grpcserver.NewHandler(grpcPublish))
@@ -200,7 +230,7 @@ func run(ctx *cli.Context) {
 
 	// unsubscribe by group
 	for _, s := range config.Consumers {
-		if err := service.UnsubscribeFromBroker(s); err != nil {
+		if err := service.UnsubscribeFromBroker(context.Background(), s); err != nil {
 			log.Errorf("failed to unsubscribe from broker %s: %v", s, err)
 		}
 	}

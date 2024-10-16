@@ -18,8 +18,8 @@ import (
 	"github.com/w-h-a/pkg/runner/binary"
 	"github.com/w-h-a/pkg/telemetry/log"
 	"github.com/w-h-a/pkg/telemetry/log/memory"
+	"github.com/w-h-a/pkg/utils/memoryutils"
 	"github.com/w-h-a/sidecar/tests/integration/pubsub/grpcgrpc/resources"
-	"google.golang.org/protobuf/types/known/anypb"
 )
 
 var (
@@ -37,6 +37,7 @@ func TestMain(m *testing.M) {
 
 	logger := memory.NewLog(
 		log.LogWithPrefix("integration test pubsub-grpc-grpc"),
+		memory.LogWithBuffer(memoryutils.NewBuffer()),
 	)
 
 	log.SetLogger(logger)
@@ -150,9 +151,7 @@ func TestPubSubGrpcToGrpc(t *testing.T) {
 			&sidecar.PublishRequest{
 				Event: &sidecar.Event{
 					EventName: "go-c",
-					Data: &anypb.Any{
-						Value: []byte(`{"status": "completed"}`),
-					},
+					Payload:   []byte(`{"status": "completed"}`),
 				},
 			},
 		),
@@ -177,9 +176,7 @@ func TestPubSubGrpcToGrpc(t *testing.T) {
 					&sidecar.PublishRequest{
 						Event: &sidecar.Event{
 							EventName: brokerName,
-							Data: &anypb.Any{
-								Value: []byte(fmt.Sprintf(`{"topic": "%s"}`, brokerName)),
-							},
+							Payload:   []byte(fmt.Sprintf(`{"topic": "%s"}`, brokerName)),
 						},
 					},
 				),
@@ -192,14 +189,11 @@ func TestPubSubGrpcToGrpc(t *testing.T) {
 
 			event := grpcSubscriber.Receive()
 
-			data := map[string]string{}
+			data := map[string]interface{}{}
 
-			err := json.Unmarshal(event.Event.Data.Value, &data)
-			require.NoError(t, err)
+			_ = json.Unmarshal(event.Event.Payload, &data)
 
-			str := data["topic"]
-
-			require.True(c, str == event.Method)
+			require.True(c, data["topic"] == event.Method)
 
 			require.True(c, event.Method == event.Event.EventName)
 		})

@@ -14,7 +14,9 @@ import (
 	"github.com/w-h-a/pkg/runner/docker"
 	"github.com/w-h-a/pkg/telemetry/log"
 	"github.com/w-h-a/pkg/telemetry/log/memory"
+	"github.com/w-h-a/pkg/telemetry/tracev2"
 	"github.com/w-h-a/pkg/utils/httputils"
+	"github.com/w-h-a/pkg/utils/memoryutils"
 )
 
 const (
@@ -35,6 +37,7 @@ func TestMain(m *testing.M) {
 
 	logger := memory.NewLog(
 		log.LogWithPrefix("e2e test pubsub"),
+		memory.LogWithBuffer(memoryutils.NewBuffer()),
 	)
 
 	log.SetLogger(logger)
@@ -176,15 +179,19 @@ func validateSubService(t *testing.T, sentMessages ReceivedMessagesResponse) {
 	require.NoError(t, err)
 
 	t.Logf("want %d", len(sentMessages.ReceivedByTopicDummy))
-	t.Logf("want %#+v", sentMessages.ReceivedByTopicDummy)
 
 	t.Logf("got %d", len(svcRsp.ReceivedByTopicDummy))
-	t.Logf("got %#+v", svcRsp.ReceivedByTopicDummy)
 
-	require.True(t, slicesEqual(sentMessages.ReceivedByTopicDummy, svcRsp.ReceivedByTopicDummy))
+	w, g := slicesEqual(sentMessages.ReceivedByTopicDummy, svcRsp.ReceivedByTopicDummy)
+
+	t.Logf("want %+#v", w)
+
+	t.Logf("got %+#v", g)
+
+	require.True(t, reflect.DeepEqual(w, g))
 }
 
-func slicesEqual(want, got []map[string]interface{}) bool {
+func slicesEqual(want, got []map[string]interface{}) (map[string]float64, map[string]float64) {
 	w := map[string]float64{}
 
 	g := map[string]float64{}
@@ -197,9 +204,12 @@ func slicesEqual(want, got []map[string]interface{}) bool {
 
 	for _, pair := range got {
 		for k, v := range pair {
+			if k == tracev2.TraceParentKey {
+				continue
+			}
 			g[k] = v.(float64)
 		}
 	}
 
-	return reflect.DeepEqual(w, g)
+	return w, g
 }

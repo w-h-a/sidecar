@@ -114,13 +114,13 @@ func extractMessage(body []byte) (map[string]interface{}, error) {
 
 	log.Printf("body: %s", string(body))
 
-	m := map[string]interface{}{}
+	payload := map[string]interface{}{}
 
-	if err := json.Unmarshal(body, &m); err != nil {
+	if err := json.Unmarshal(body, &payload); err != nil {
 		return nil, err
 	}
 
-	msg := m["data"].(map[string]interface{})
+	msg := payload["payload"].(map[string]interface{})
 
 	log.Printf("output: '%+v'\n", msg)
 

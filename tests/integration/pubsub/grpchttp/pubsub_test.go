@@ -19,8 +19,8 @@ import (
 	"github.com/w-h-a/pkg/telemetry/log"
 	"github.com/w-h-a/pkg/telemetry/log/memory"
 	"github.com/w-h-a/pkg/utils/httputils"
+	"github.com/w-h-a/pkg/utils/memoryutils"
 	"github.com/w-h-a/sidecar/tests/integration/pubsub/grpchttp/resources"
-	"google.golang.org/protobuf/types/known/anypb"
 )
 
 var (
@@ -38,6 +38,7 @@ func TestMain(m *testing.M) {
 
 	logger := memory.NewLog(
 		log.LogWithPrefix("integration test pubsub-grpc-http"),
+		memory.LogWithBuffer(memoryutils.NewBuffer()),
 	)
 
 	log.SetLogger(logger)
@@ -141,9 +142,7 @@ func TestPubSubGrpctoHttp(t *testing.T) {
 			&sidecar.PublishRequest{
 				Event: &sidecar.Event{
 					EventName: "go-c",
-					Data: &anypb.Any{
-						Value: []byte(`{"status": "completed"}`),
-					},
+					Payload:   []byte(`{"status": "completed"}`),
 				},
 			},
 		),
@@ -168,9 +167,7 @@ func TestPubSubGrpctoHttp(t *testing.T) {
 					&sidecar.PublishRequest{
 						Event: &sidecar.Event{
 							EventName: brokerName,
-							Data: &anypb.Any{
-								Value: []byte(fmt.Sprintf(`{"topic": "%s"}`, brokerName)),
-							},
+							Payload:   []byte(fmt.Sprintf(`{"topic": "%s"}`, brokerName)),
 						},
 					},
 				),
@@ -183,11 +180,7 @@ func TestPubSubGrpctoHttp(t *testing.T) {
 
 			event := httpSubscriber.Receive()
 
-			data, ok := event.Event.Data.(map[string]interface{})
-			require.True(t, ok)
-
-			str, ok := data["topic"].(string)
-			require.True(t, ok)
+			str := event.Event.Payload["topic"].(string)
 
 			rpl := strings.Replace(str, "-", "/", -1)
 
