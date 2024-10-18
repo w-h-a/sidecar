@@ -5,7 +5,7 @@ import (
 	pbTrace "github.com/w-h-a/pkg/proto/trace"
 	"github.com/w-h-a/pkg/sidecar"
 	"github.com/w-h-a/pkg/store"
-	"github.com/w-h-a/pkg/telemetry/tracev2"
+	"github.com/w-h-a/pkg/telemetry/traceexporter"
 	"google.golang.org/protobuf/types/known/anypb"
 )
 
@@ -43,7 +43,7 @@ func SerializeSecret(secret *sidecar.Secret) *pb.Secret {
 	}
 }
 
-func SerializeSpan(s *tracev2.SpanData) *pbTrace.Span {
+func SerializeSpan(s *traceexporter.SpanData) *pbTrace.Span {
 	return &pbTrace.Span{
 		Name:     s.Name,
 		Id:       s.Id,
