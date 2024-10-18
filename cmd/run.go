@@ -22,7 +22,7 @@ import (
 	"github.com/w-h-a/pkg/telemetry/log"
 	memorylog "github.com/w-h-a/pkg/telemetry/log/memory"
 	"github.com/w-h-a/pkg/telemetry/tracev2"
-	memorytrace "github.com/w-h-a/pkg/telemetry/tracev2/memory"
+	otelwrapper "github.com/w-h-a/pkg/telemetry/tracev2/otel"
 	"github.com/w-h-a/pkg/utils/memoryutils"
 	"github.com/w-h-a/sidecar/cmd/config"
 	"github.com/w-h-a/sidecar/cmd/grpc"
@@ -35,17 +35,24 @@ func run(ctx *cli.Context) {
 	prefix := fmt.Sprintf("%s.%s:%s", config.Namespace, config.Name, config.Version)
 
 	// logger
+	logBuffer := memoryutils.NewBuffer()
+
 	logger := memorylog.NewLog(
 		log.LogWithPrefix(prefix),
-		memorylog.LogWithBuffer(memoryutils.NewBuffer()),
+		memorylog.LogWithBuffer(logBuffer),
 	)
 
 	log.SetLogger(logger)
 
 	// otel tracer
-	buffer := memoryutils.NewBuffer()
+	te, err := GetTraceExporterBuilder(config.TraceExporter)
+	if err != nil {
+		log.Fatal(err)
+	}
 
-	exporter := memorytrace.NewExporter(buffer)
+	traceBuffer := memoryutils.NewBuffer()
+
+	exporter := MakeTraceExporter(te, traceBuffer)
 
 	tp := sdktrace.NewTracerProvider(
 		sdktrace.WithBatcher(exporter),
@@ -54,9 +61,8 @@ func run(ctx *cli.Context) {
 
 	otel.SetTracerProvider(tp)
 
-	tracer := memorytrace.NewTrace(
+	tracer := otelwrapper.NewTrace(
 		tracev2.TraceWithName(prefix),
-		memorytrace.TraceWithBuffer(buffer),
 	)
 
 	// get clients
@@ -159,7 +165,7 @@ func run(ctx *cli.Context) {
 	// create http server
 	router := mux.NewRouter()
 
-	httpHealth := http.NewHealthHandler(tracer)
+	httpHealth := http.NewHealthHandler(traceBuffer)
 	httpPublish := http.NewPublishHandler(service, tracer)
 	httpState := http.NewStateHandler(service, tracer)
 	httpSecret := http.NewSecretHandler(service, tracer)
@@ -192,7 +198,7 @@ func run(ctx *cli.Context) {
 
 	grpcServer := grpcserver.NewServer(grpcOpts...)
 
-	grpcHealth := grpc.NewHealthHandler(tracer)
+	grpcHealth := grpc.NewHealthHandler(traceBuffer)
 	grpcPublish := grpc.NewPublishHandler(service, tracer)
 	grpcState := grpc.NewStateHandler(service, tracer)
 	grpcSecret := grpc.NewSecretHandler(service, tracer)
