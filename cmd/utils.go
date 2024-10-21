@@ -14,8 +14,8 @@ import (
 	memorystore "github.com/w-h-a/pkg/store/memory"
 	"github.com/w-h-a/pkg/telemetry/traceexporter"
 	memorytraceexporter "github.com/w-h-a/pkg/telemetry/traceexporter/memory"
+	otelp "github.com/w-h-a/pkg/telemetry/traceexporter/otelp"
 	"github.com/w-h-a/pkg/utils/memoryutils"
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 )
 
 var (
@@ -34,8 +34,8 @@ var (
 		"env": env.NewSecret,
 	}
 
-	defaultTraceExporters = map[string]func(...traceexporter.ExporterOption) sdktrace.SpanExporter{
-		// "otelp": otelp.NewExporter,
+	defaultTraceExporters = map[string]func(...traceexporter.ExporterOption) traceexporter.TraceExporter{
+		"otelp":  otelp.NewExporter,
 		"memory": memorytraceexporter.NewExporter,
 	}
 )
@@ -75,7 +75,7 @@ func MakeSecret(secretBuilder func(...secret.SecretOption) secret.Secret, nodes 
 	)
 }
 
-func GetTraceExporterBuilder(s string) (func(...traceexporter.ExporterOption) sdktrace.SpanExporter, error) {
+func GetTraceExporterBuilder(s string) (func(...traceexporter.ExporterOption) traceexporter.TraceExporter, error) {
 	traceExporterBuilder, exists := defaultTraceExporters[s]
 	if !exists && len(s) > 0 {
 		return nil, fmt.Errorf("trace exporter %s is not supported", s)
@@ -85,9 +85,10 @@ func GetTraceExporterBuilder(s string) (func(...traceexporter.ExporterOption) sd
 	return traceExporterBuilder, nil
 }
 
-func MakeTraceExporter(tracerExporterBuilder func(...traceexporter.ExporterOption) sdktrace.SpanExporter, buffer *memoryutils.Buffer) sdktrace.SpanExporter {
+func MakeTraceExporter(tracerExporterBuilder func(...traceexporter.ExporterOption) traceexporter.TraceExporter, buffer *memoryutils.Buffer, nodes []string) traceexporter.TraceExporter {
 	return tracerExporterBuilder(
 		traceexporter.ExporterWithBuffer(buffer),
+		traceexporter.ExporterWithNodes(nodes...),
 	)
 }
 

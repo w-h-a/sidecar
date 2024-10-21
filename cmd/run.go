@@ -52,7 +52,7 @@ func run(ctx *cli.Context) {
 
 	traceBuffer := memoryutils.NewBuffer()
 
-	exporter := MakeTraceExporter(te, traceBuffer)
+	exporter := MakeTraceExporter(te, traceBuffer, []string{config.TraceAddress})
 
 	tp := sdktrace.NewTracerProvider(
 		sdktrace.WithBatcher(exporter),
