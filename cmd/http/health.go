@@ -4,9 +4,10 @@ import (
 	"net/http"
 	"strconv"
 
-	"github.com/w-h-a/pkg/telemetry/tracev2"
+	"github.com/w-h-a/pkg/telemetry/traceexporter"
 	"github.com/w-h-a/pkg/utils/errorutils"
 	"github.com/w-h-a/pkg/utils/httputils"
+	"github.com/w-h-a/pkg/utils/memoryutils"
 )
 
 type HealthHandler interface {
@@ -15,7 +16,7 @@ type HealthHandler interface {
 }
 
 type healthHandler struct {
-	tracer tracev2.Trace
+	buffer *memoryutils.Buffer
 }
 
 func (h *healthHandler) Check(w http.ResponseWriter, r *http.Request) {
@@ -37,17 +38,25 @@ func (h *healthHandler) Trace(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	spans, err := h.tracer.Read(
-		tracev2.ReadWithCount(count),
-	)
-	if err != nil {
-		httputils.ErrResponse(w, errorutils.InternalServerError("trace", "failed to retrieve traces: %v", err))
-		return
+	var entries []*memoryutils.Entry
+
+	if count > 0 {
+		entries = h.buffer.Get(count)
+	} else {
+		entries = h.buffer.Get(h.buffer.Options().Size)
+	}
+
+	spans := []*traceexporter.SpanData{}
+
+	for _, entry := range entries {
+		span := entry.Value.(*traceexporter.SpanData)
+
+		spans = append(spans, span)
 	}
 
 	httputils.OkResponse(w, spans)
 }
 
-func NewHealthHandler(tracer tracev2.Trace) HealthHandler {
-	return &healthHandler{tracer}
+func NewHealthHandler(b *memoryutils.Buffer) HealthHandler {
+	return &healthHandler{b}
 }
