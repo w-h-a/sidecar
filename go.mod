@@ -7,7 +7,7 @@ require (
 	github.com/gorilla/mux v1.8.1
 	github.com/stretchr/testify v1.9.0
 	github.com/urfave/cli v1.22.15
-	github.com/w-h-a/pkg v0.36.1-rc.2
+	github.com/w-h-a/pkg v0.36.1-rc.3
 	go.opentelemetry.io/otel v1.31.0
 	go.opentelemetry.io/otel/sdk v1.31.0
 	google.golang.org/grpc v1.67.1
