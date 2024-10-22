@@ -28,9 +28,9 @@ import (
 	"github.com/w-h-a/sidecar/cmd/grpc"
 	"github.com/w-h-a/sidecar/cmd/http"
 	"go.opentelemetry.io/otel"
-	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
 )
 
 func run(ctx *cli.Context) {
@@ -56,7 +56,10 @@ func run(ctx *cli.Context) {
 
 	exporter := MakeTraceExporter(te, traceBuffer, []string{config.TraceAddress}, config.TraceProtocol)
 
-	resource, err := resource.New(context.Background(), resource.WithAttributes(attribute.String("name", prefix)))
+	resource, err := resource.New(
+		context.Background(),
+		resource.WithAttributes(semconv.ServiceName(prefix)),
+	)
 	if err != nil {
 		log.Fatal(err)
 	}
