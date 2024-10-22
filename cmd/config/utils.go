@@ -2,10 +2,10 @@ package config
 
 import "strings"
 
-func Split(commaString string) []string {
+func Split(str string) []string {
 	s := []string{}
 
-	s = append(s, strings.Split(commaString, ",")...)
+	s = append(s, strings.Split(str, ",")...)
 
 	return s
 }

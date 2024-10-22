@@ -54,7 +54,14 @@ func run(ctx *cli.Context) {
 
 	traceBuffer := memoryutils.NewBuffer()
 
-	exporter := MakeTraceExporter(te, traceBuffer, []string{config.TraceAddress}, config.TraceProtocol)
+	exporter := MakeTraceExporter(
+		te,
+		traceBuffer,
+		[]string{config.TraceAddress},
+		config.TraceProtocol,
+		config.TraceSecure,
+		config.TraceHeaders,
+	)
 
 	resource, err := resource.New(
 		context.Background(),

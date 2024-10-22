@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/w-h-a/pkg/broker"
 	memorybroker "github.com/w-h-a/pkg/broker/memory"
@@ -85,12 +86,30 @@ func GetTraceExporterBuilder(s string) (func(...traceexporter.ExporterOption) tr
 	return traceExporterBuilder, nil
 }
 
-func MakeTraceExporter(tracerExporterBuilder func(...traceexporter.ExporterOption) traceexporter.TraceExporter, buffer *memoryutils.Buffer, nodes []string, protocol string) traceexporter.TraceExporter {
-	return tracerExporterBuilder(
+func MakeTraceExporter(tracerExporterBuilder func(...traceexporter.ExporterOption) traceexporter.TraceExporter, buffer *memoryutils.Buffer, nodes []string, protocol, secure string, pairs []string) traceexporter.TraceExporter {
+	opts := []traceexporter.ExporterOption{
 		traceexporter.ExporterWithBuffer(buffer),
 		traceexporter.ExporterWithNodes(nodes...),
 		traceexporter.ExporterWithProtocol(protocol),
-	)
+	}
+
+	if len(secure) > 1 {
+		opts = append(opts, traceexporter.ExporterWithSecure())
+	}
+
+	headers := map[string]string{}
+
+	for _, pair := range pairs {
+		kv := strings.Split(pair, "=")
+		if len(kv) != 2 {
+			continue
+		}
+		headers[kv[0]] = kv[1]
+	}
+
+	opts = append(opts, traceexporter.ExporterWithHeaders(headers))
+
+	return tracerExporterBuilder(opts...)
 }
 
 func GetBrokerBuilder(s string) (func(...broker.BrokerOption) broker.Broker, error) {
