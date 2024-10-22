@@ -28,6 +28,8 @@ import (
 	"github.com/w-h-a/sidecar/cmd/grpc"
 	"github.com/w-h-a/sidecar/cmd/http"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/attribute"
+	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 )
 
@@ -54,9 +56,15 @@ func run(ctx *cli.Context) {
 
 	exporter := MakeTraceExporter(te, traceBuffer, []string{config.TraceAddress}, config.TraceProtocol)
 
+	resource, err := resource.New(context.Background(), resource.WithAttributes(attribute.String("name", prefix)))
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	tp := sdktrace.NewTracerProvider(
-		sdktrace.WithBatcher(exporter),
 		sdktrace.WithSampler(sdktrace.AlwaysSample()),
+		sdktrace.WithBatcher(exporter),
+		sdktrace.WithResource(resource),
 	)
 
 	otel.SetTracerProvider(tp)
