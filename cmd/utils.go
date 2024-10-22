@@ -2,6 +2,7 @@ package cmd
 
 import (
 	"fmt"
+	"strings"
 
 	"github.com/w-h-a/pkg/broker"
 	memorybroker "github.com/w-h-a/pkg/broker/memory"
@@ -14,8 +15,8 @@ import (
 	memorystore "github.com/w-h-a/pkg/store/memory"
 	"github.com/w-h-a/pkg/telemetry/traceexporter"
 	memorytraceexporter "github.com/w-h-a/pkg/telemetry/traceexporter/memory"
+	otelp "github.com/w-h-a/pkg/telemetry/traceexporter/otelp"
 	"github.com/w-h-a/pkg/utils/memoryutils"
-	sdktrace "go.opentelemetry.io/otel/sdk/trace"
 )
 
 var (
@@ -34,8 +35,8 @@ var (
 		"env": env.NewSecret,
 	}
 
-	defaultTraceExporters = map[string]func(...traceexporter.ExporterOption) sdktrace.SpanExporter{
-		// "otelp": otelp.NewExporter,
+	defaultTraceExporters = map[string]func(...traceexporter.ExporterOption) traceexporter.TraceExporter{
+		"otelp":  otelp.NewExporter,
 		"memory": memorytraceexporter.NewExporter,
 	}
 )
@@ -75,7 +76,7 @@ func MakeSecret(secretBuilder func(...secret.SecretOption) secret.Secret, nodes 
 	)
 }
 
-func GetTraceExporterBuilder(s string) (func(...traceexporter.ExporterOption) sdktrace.SpanExporter, error) {
+func GetTraceExporterBuilder(s string) (func(...traceexporter.ExporterOption) traceexporter.TraceExporter, error) {
 	traceExporterBuilder, exists := defaultTraceExporters[s]
 	if !exists && len(s) > 0 {
 		return nil, fmt.Errorf("trace exporter %s is not supported", s)
@@ -85,10 +86,30 @@ func GetTraceExporterBuilder(s string) (func(...traceexporter.ExporterOption) sd
 	return traceExporterBuilder, nil
 }
 
-func MakeTraceExporter(tracerExporterBuilder func(...traceexporter.ExporterOption) sdktrace.SpanExporter, buffer *memoryutils.Buffer) sdktrace.SpanExporter {
-	return tracerExporterBuilder(
+func MakeTraceExporter(tracerExporterBuilder func(...traceexporter.ExporterOption) traceexporter.TraceExporter, buffer *memoryutils.Buffer, nodes []string, protocol, secure string, pairs []string) traceexporter.TraceExporter {
+	opts := []traceexporter.ExporterOption{
 		traceexporter.ExporterWithBuffer(buffer),
-	)
+		traceexporter.ExporterWithNodes(nodes...),
+		traceexporter.ExporterWithProtocol(protocol),
+	}
+
+	if len(secure) > 0 {
+		opts = append(opts, traceexporter.ExporterWithSecure())
+	}
+
+	headers := map[string]string{}
+
+	for _, pair := range pairs {
+		kv := strings.Split(pair, "=")
+		if len(kv) != 2 {
+			continue
+		}
+		headers[kv[0]] = kv[1]
+	}
+
+	opts = append(opts, traceexporter.ExporterWithHeaders(headers))
+
+	return tracerExporterBuilder(opts...)
 }
 
 func GetBrokerBuilder(s string) (func(...broker.BrokerOption) broker.Broker, error) {
