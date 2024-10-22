@@ -24,6 +24,7 @@ var (
 	SecretPrefix       = os.Getenv("SECRET_PREFIX")
 	TraceExporter      = os.Getenv("TRACE_EXPORTER")
 	TraceAddress       = os.Getenv("TRACE_ADDRESS")
+	TraceProtocol      = os.Getenv("TRACE_PROTOCOL")
 	AwsAccessKeyId     = os.Getenv("AWS_ACCESS_KEY_ID")
 	AwsSecretAccessKey = os.Getenv("AWS_SECRET_ACCESS_KEY")
 )

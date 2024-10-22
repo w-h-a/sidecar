@@ -85,10 +85,11 @@ func GetTraceExporterBuilder(s string) (func(...traceexporter.ExporterOption) tr
 	return traceExporterBuilder, nil
 }
 
-func MakeTraceExporter(tracerExporterBuilder func(...traceexporter.ExporterOption) traceexporter.TraceExporter, buffer *memoryutils.Buffer, nodes []string) traceexporter.TraceExporter {
+func MakeTraceExporter(tracerExporterBuilder func(...traceexporter.ExporterOption) traceexporter.TraceExporter, buffer *memoryutils.Buffer, nodes []string, protocol string) traceexporter.TraceExporter {
 	return tracerExporterBuilder(
 		traceexporter.ExporterWithBuffer(buffer),
 		traceexporter.ExporterWithNodes(nodes...),
+		traceexporter.ExporterWithProtocol(protocol),
 	)
 }
 
