@@ -93,7 +93,7 @@ func MakeTraceExporter(tracerExporterBuilder func(...traceexporter.ExporterOptio
 		traceexporter.ExporterWithProtocol(protocol),
 	}
 
-	if len(secure) > 1 {
+	if len(secure) > 0 {
 		opts = append(opts, traceexporter.ExporterWithSecure())
 	}
 
