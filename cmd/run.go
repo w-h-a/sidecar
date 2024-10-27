@@ -34,13 +34,13 @@ import (
 )
 
 func run(ctx *cli.Context) {
-	prefix := fmt.Sprintf("%s.%s:%s", config.Namespace, config.Name, config.Version)
+	name := fmt.Sprintf("%s.%s", config.Namespace, config.Name)
 
 	// logger
 	logBuffer := memoryutils.NewBuffer()
 
 	logger := memorylog.NewLog(
-		log.LogWithPrefix(prefix),
+		log.LogWithPrefix(name),
 		memorylog.LogWithBuffer(logBuffer),
 	)
 
@@ -65,7 +65,7 @@ func run(ctx *cli.Context) {
 
 	resource, err := resource.New(
 		context.Background(),
-		resource.WithAttributes(semconv.ServiceName(prefix)),
+		resource.WithAttributes(semconv.ServiceName(name)),
 	)
 	if err != nil {
 		log.Fatal(err)
@@ -80,7 +80,7 @@ func run(ctx *cli.Context) {
 	otel.SetTracerProvider(tp)
 
 	tracer := otelwrapper.NewTrace(
-		tracev2.TraceWithName(prefix),
+		tracev2.TraceWithName(name),
 	)
 
 	// get clients
