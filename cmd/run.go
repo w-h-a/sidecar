@@ -28,17 +28,19 @@ import (
 	"github.com/w-h-a/sidecar/cmd/grpc"
 	"github.com/w-h-a/sidecar/cmd/http"
 	"go.opentelemetry.io/otel"
+	"go.opentelemetry.io/otel/sdk/resource"
 	sdktrace "go.opentelemetry.io/otel/sdk/trace"
+	semconv "go.opentelemetry.io/otel/semconv/v1.26.0"
 )
 
 func run(ctx *cli.Context) {
-	prefix := fmt.Sprintf("%s.%s:%s", config.Namespace, config.Name, config.Version)
+	name := fmt.Sprintf("%s.%s", config.Namespace, config.Name)
 
 	// logger
 	logBuffer := memoryutils.NewBuffer()
 
 	logger := memorylog.NewLog(
-		log.LogWithPrefix(prefix),
+		log.LogWithPrefix(name),
 		memorylog.LogWithBuffer(logBuffer),
 	)
 
@@ -52,17 +54,33 @@ func run(ctx *cli.Context) {
 
 	traceBuffer := memoryutils.NewBuffer()
 
-	exporter := MakeTraceExporter(te, traceBuffer)
+	exporter := MakeTraceExporter(
+		te,
+		traceBuffer,
+		[]string{config.TraceAddress},
+		config.TraceProtocol,
+		config.TraceSecure,
+		config.TraceHeaders,
+	)
+
+	resource, err := resource.New(
+		context.Background(),
+		resource.WithAttributes(semconv.ServiceName(name)),
+	)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	tp := sdktrace.NewTracerProvider(
-		sdktrace.WithBatcher(exporter),
 		sdktrace.WithSampler(sdktrace.AlwaysSample()),
+		sdktrace.WithBatcher(exporter),
+		sdktrace.WithResource(resource),
 	)
 
 	otel.SetTracerProvider(tp)
 
 	tracer := otelwrapper.NewTrace(
-		tracev2.TraceWithName(prefix),
+		tracev2.TraceWithName(name),
 	)
 
 	// get clients
